@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+// ignore_for_file: use_key_in_widget_constructors
 
+import 'package:flutter/material.dart';
+import 'sign_up.dart';
 void main() {
   runApp(MyApp());
 }
@@ -76,22 +78,45 @@ class _LoginPageState extends State<LoginPage> {
             // Email Text Field
             TextField(
               controller: _emailController,
+              cursorColor: Colors.white,
               decoration: InputDecoration(
+                labelStyle: TextStyle(color: Colors.white),
                 labelText: 'Email',
                 border: OutlineInputBorder(),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color.fromARGB(255, 255, 255, 255), width: 2.0),
+                  ),
+                                    // Border when the TextField is focused
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Color.fromARGB(255, 166, 0, 199), width: 2.0), // Change to your desired color
+                  ),
+
               ),
               keyboardType: TextInputType.emailAddress,
+              style: TextStyle(color: Colors.white, fontSize: 18),
+              
             ),
             SizedBox(height: 16),
 
             // Password Text Field
             TextField(
               controller: _passwordController,
+              cursorColor: Colors.white,
               decoration: InputDecoration(
+                labelStyle: TextStyle(color: Colors.white),
+                
                 labelText: 'Password',
                 border: OutlineInputBorder(),
-                
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color.fromARGB(255, 255, 255, 255), width: 2.0),
+                  ),
+                                  // Border when the TextField is focused
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: const Color.fromARGB(255, 166, 0, 199), width: 2.0), // Change to your desired color
+                  ),
+
               ),
+              style: TextStyle(color: Colors.white, fontSize: 18),
               obscureText: true,
               
             ),
@@ -103,16 +128,27 @@ class _LoginPageState extends State<LoginPage> {
               child: Text('Login'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 100, vertical: 16),
+                backgroundColor:const Color.fromARGB(255, 220, 43, 30),
+                foregroundColor: Colors.white,
               ),
+              
             ),
             SizedBox(height: 8),
 
             // Sign Up Button
             TextButton(
-              onPressed: _signUp,
+                            onPressed: () {
+                // Navigate to the SignUpPage when the button is pressed
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => SignUpPage()),
+                );
+              },
               child: Text('Sign Up'),
               style: TextButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 100, vertical: 16),
+                backgroundColor: const Color.fromARGB(255, 250, 225, 2),
+                foregroundColor: const Color.fromARGB(255, 0, 0, 0),
               ),
             ),
           ],
