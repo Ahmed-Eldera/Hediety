@@ -1,4 +1,4 @@
-// ignore_for_file: use_key_in_widget_constructors
+// ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
 
 import 'package:flutter/material.dart';
 import 'sign_up.dart';
@@ -75,6 +75,11 @@ class _LoginPageState extends State<LoginPage> {
                        height: 100, // Set the desired height
                       ),
             SizedBox(height: 16),
+            Text('Hediety!',
+            style: TextStyle(
+              color:Color.fromARGB(255, 250, 225, 2),
+              fontSize: 40 ),),
+              SizedBox(height: 16),
             // Email Text Field
             TextField(
               controller: _emailController,
@@ -136,7 +141,7 @@ class _LoginPageState extends State<LoginPage> {
             SizedBox(height: 8),
 
             // Sign Up Button
-            TextButton(
+            ElevatedButton(
                             onPressed: () {
                 // Navigate to the SignUpPage when the button is pressed
                 Navigator.push(
