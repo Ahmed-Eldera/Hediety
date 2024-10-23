@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 class SignUpPage extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
   @override
 Widget build(BuildContext context) {
@@ -51,7 +53,7 @@ Widget build(BuildContext context) {
             SizedBox(height: 16),
             // UserName
            TextField(
-              controller: _emailController,
+              controller: _usernameController,
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 labelStyle: TextStyle(color: Colors.white),
@@ -66,14 +68,14 @@ Widget build(BuildContext context) {
                   ),
 
               ),
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: TextInputType.text,
               style: TextStyle(color: Colors.white, fontSize: 18),
               
             ),
             SizedBox(height: 16),
             //phone Number
                        TextField(
-              controller: _emailController,
+              controller: _phoneController,
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 labelStyle: TextStyle(color: Colors.white),
@@ -88,7 +90,7 @@ Widget build(BuildContext context) {
                   ),
 
               ),
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: TextInputType.number,
               style: TextStyle(color: Colors.white, fontSize: 18),
               
             ),

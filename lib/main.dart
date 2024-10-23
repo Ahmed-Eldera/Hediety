@@ -2,31 +2,32 @@
 
 import 'package:flutter/material.dart';
 import 'sign_up.dart';
+import 'home.dart';
 void main() {
   runApp(MyApp());
 }
-const MaterialColor laser = MaterialColor(
-  0xFF009EAF, // The primary color
-  <int, Color>{
-    50: Color(0xFFE0F7FA), // 10%
-    100: Color(0xFFB2EBF2), // 20%
-    200: Color(0xFF80DEEA), // 30%
-    300: Color(0xFF4DD0E1), // 40%
-    400: Color(0xFF26C6DA), // 50%
-    500: Color(0xFF009EAF), // 60% (primary color)
-    600: Color(0xFF0094A8), // 70%
-    700: Color(0xFF008C97), // 80%
-    800: Color(0xFF008C8B), // 90%
-    900: Color(0xFF007C79), // 100%
-  },
-);
+// const MaterialColor laser = MaterialColor(
+//   0xFF009EAF, // The primary color
+//   <int, Color>{
+//     50: Color(0xFFE0F7FA), // 10%
+//     100: Color(0xFFB2EBF2), // 20%
+//     200: Color(0xFF80DEEA), // 30%
+//     300: Color(0xFF4DD0E1), // 40%
+//     400: Color(0xFF26C6DA), // 50%
+//     500: Color(0xFF009EAF), // 60% (primary color)
+//     600: Color(0xFF0094A8), // 70%
+//     700: Color(0xFF008C97), // 80%
+//     800: Color(0xFF008C8B), // 90%
+//     900: Color(0xFF007C79), // 100%
+//   },
+// );
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Login',
       theme: ThemeData(
-        primarySwatch: laser,
+        // primarySwatch: laser,
         fontFamily: "pixel",
       ),
       home: LoginPage(),
@@ -129,7 +130,13 @@ class _LoginPageState extends State<LoginPage> {
 
             // Login Button
             ElevatedButton(
-              onPressed: _login,
+              onPressed: () {
+                // Navigate to the SignUpPage when the button is pressed
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomePage()),
+                );
+              },
               child: Text('Login'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 100, vertical: 16),
@@ -142,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
 
             // Sign Up Button
             ElevatedButton(
-                            onPressed: () {
+              onPressed: () {
                 // Navigate to the SignUpPage when the button is pressed
                 Navigator.push(
                   context,
