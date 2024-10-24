@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hediety/colors.dart';
+import 'package:hediety/profile.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -20,7 +21,7 @@ class HomePage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                    color: gold,
                   ),
                 ),
                 Row(
@@ -32,11 +33,15 @@ class HomePage extends StatelessWidget {
                   },
                 ),
                 SizedBox(width:10),
-                                IconButton(
+                //SETTINGS
+                IconButton(
                   icon: Icon(Icons.settings, color: Colors.white), // Settings icon
                   onPressed: () {
                     // Navigate to settings page (to be implemented)
-                    print('Settings button pressed');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ProfilePage()),
+                );
                   },
                 ),]),
               ],
