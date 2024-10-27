@@ -1,6 +1,7 @@
 // ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:hediety/myevents.dart';
 import 'package:hediety/profile.dart';
 import 'sign_up.dart';
 import 'home.dart';
@@ -29,7 +30,8 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Login',
             routes: {
         '/profile': (context) => ProfilePage(), // Define the route for the ProfilePage
-        '/home': (context) => HomePage(), // Define the route for the HomePage
+        '/home': (context) => HomePage(),
+        '/myevents':(context)=>MyEventsPage(), // Define the route for the HomePage
       },
       theme: ThemeData(
         // primarySwatch: laser,

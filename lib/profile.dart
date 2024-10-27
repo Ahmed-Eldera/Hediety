@@ -204,9 +204,14 @@ class _ProfilePageState extends State<ProfilePage> {
           padding: EdgeInsets.symmetric(vertical: 16), // Same padding for both
           backgroundColor: a7mar, // Button color
         ),
-        onPressed: () {
-          print('My Events button pressed');
-        },
+              onPressed: () {
+                // Handle password verification here
+                // If verified, save the changes
+                // print('Password entered: ${passwordController.text}');
+                // Navigator.of(context).pop(); // Close the dialog
+                // _saveProfile(); // Save the profile after password verification
+                Navigator.of(context).pushReplacementNamed('/myevents'); // Navigate to HomePage
+              },
         child: Text(
           'My Events',
           style: TextStyle(color: Colors.white),
