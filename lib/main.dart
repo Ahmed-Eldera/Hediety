@@ -1,11 +1,14 @@
 // ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors
-
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hediety/myevents.dart';
 import 'package:hediety/profile.dart';
 import 'sign_up.dart';
 import 'home.dart';
-void main() {
+
+Future<void> main() async {
+    WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); 
   runApp(MyApp());
 }
 // const MaterialColor laser = MaterialColor(
