@@ -55,7 +55,10 @@ class RemoteDataSource {
             'username': user.name,
             'phone': user.phone,
             'friendRequests':[],
-            'friends':[]
+            'friends':[],
+            'pic':"",
+            'events':[],
+            'pledgedGifts':[]
             // You can add more user-related data here if needed
           });
      

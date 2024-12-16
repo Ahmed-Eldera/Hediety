@@ -40,6 +40,7 @@ class HeaderWithIcons extends StatelessWidget {
                 );
               },
             ),
+                        SizedBox(width: 10),
                         IconButton(
               icon: Icon(Icons.notifications, color: Colors.white),
               onPressed: () {

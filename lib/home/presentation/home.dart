@@ -1,17 +1,91 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/colors.dart';
+import 'package:hediety/create_event/presentation/screens/create_event.dart';
 import 'package:hediety/home/presentation/widgets/addFriendButton.dart';
 import 'package:hediety/home/presentation/widgets/header.dart';
 import 'package:hediety/widgets/MyButton.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:provider/provider.dart';
- // Import ProfilePage if necessary
 
-class HomePage extends StatelessWidget {
-  
+// The HomePage now fetches data from Firestore dynamically
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  List<Map<String, dynamic>> friends = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFriends();
+  }
+
+  // Function to fetch friends and their events
+  Future<void> _loadFriends() async {
+    final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
+
+    try {
+      // Fetch the current user's document to get the friend IDs
+      var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        List<dynamic> friendIds = userDoc['friends'] ?? [];
+
+        if (friendIds.isNotEmpty) {
+          // Fetch each friend's details and events
+          List<Map<String, dynamic>> fetchedFriends = [];
+          for (var friendId in friendIds) {
+            var friendDoc = await FirebaseFirestore.instance.collection('users').doc(friendId).get();
+            if (friendDoc.exists) {
+              var friendData = friendDoc.data()!;
+              var events = await _getFriendEvents(friendId);
+
+              fetchedFriends.add({
+                'id': friendId,
+                'username': friendData['username'],
+                'phone': friendData['phone'],
+                'profilePicture': friendData['profilePicture'] ?? 'https://via.placeholder.com/150',
+                'events': events,
+              });
+            }
+          }
+
+          setState(() {
+            friends = fetchedFriends;
+            isLoading = false;
+          });
+        } else {
+          setState(() {
+            isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading friends: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  // Function to fetch events of a friend
+  Future<List<Map<String, dynamic>>> _getFriendEvents(String friendId) async {
+    try {
+      var eventsSnapshot = await FirebaseFirestore.instance.collection('events').where('author', isEqualTo: friendId).get();
+      return eventsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    } catch (e) {
+      print('Error fetching events for friend: $e');
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pro = Provider.of<UserProvider>(context);
+
     return Scaffold(
       backgroundColor: bg,
       body: Padding(
@@ -19,26 +93,31 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HeaderWithIcons(name: pro.user!.name,), // Replaced with HeaderWithIcons widget
+            HeaderWithIcons(name: pro.user!.name),
             SizedBox(height: 20),
-          
             Center(
               child: MyButton(
                 onPressed: () {
-                  _showCreateEventDialog(context);
-                }, label: 'Create Event',backgroundColor: a7mar,
-              ),
-            ), // Replaced with CreateEventButton widget
-            SizedBox(height: 20),
-            // Friend list (not yet separated)
-            Expanded(
-              child: ListView.builder(
-                itemCount: 10,
-                itemBuilder: (context, index) {
-                  return FriendListItem(index: index); // This is to be done later
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
                 },
+                label: 'Create Event',
+                backgroundColor: a7mar,
               ),
             ),
+            SizedBox(height: 20),
+            isLoading
+                ? Center(child: CircularProgressIndicator())
+                : friends.isEmpty
+                    ? Center(child: Text('You have no friends or they have no events'))
+                    : Expanded(
+                        child: ListView.builder(
+                          itemCount: friends.length,
+                          itemBuilder: (context, index) {
+                            var friend = friends[index];
+                            return FriendListItem(friend: friend);
+                          },
+                        ),
+                      ),
           ],
         ),
       ),
@@ -46,35 +125,43 @@ class HomePage extends StatelessWidget {
         onPressed: () {
           print('Add friends button pressed');
         },
-      ), // Replaced with AddFriendButton widget
+      ),
     );
   }
-
-  void _showCreateEventDialog(BuildContext context) {
-    // Implement the dialog logic for creating an event
-  }
 }
-class FriendListItem extends StatelessWidget {
-  final int index;
 
-  FriendListItem({required this.index});
+class FriendListItem extends StatelessWidget {
+  final Map<String, dynamic> friend;
+
+  FriendListItem({required this.friend});
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundImage: AssetImage('assets/profile_placeholder.png'),
-        radius: 25,
+    return Card(
+      color: bg,
+      margin: EdgeInsets.all(8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundImage: NetworkImage(friend['profilePicture']),
+          radius: 25,
+        ),
+
+        title: Text(friend['username'], style: TextStyle(fontSize: 18, color: Colors.white)),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Text('Phone: ${friend['phone']}', style: TextStyle(color: Colors.white)),
+            // SizedBox(height: 5),
+            Text(
+              'Upcoming Events: ${friend['events'].isNotEmpty ? friend['events'].length : 'None'}',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        onTap: () {
+          print('Tapped on ${friend['username']}');
+        },
       ),
-      title: Text('Friend #$index', style: TextStyle(fontSize: 18, color: Colors.white)),
-      subtitle: Text('Upcoming Events: ${index % 2 == 0 ? '1' : 'None'}'),
-      trailing: CircleAvatar(
-        radius: 10,
-        backgroundColor: index % 2 == 0 ? Colors.green : Colors.grey,
-      ),
-      onTap: () {
-        print('Tapped on Friend #$index');
-      },
     );
   }
 }

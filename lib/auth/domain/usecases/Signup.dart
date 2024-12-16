@@ -1,4 +1,4 @@
-import '../../../domain/repositories/auth.dart';
+import '../../domain/repositories/auth.dart';
 import "../entities/User.dart";
 class SignupUseCase {
   final AuthRepository signupRepository;

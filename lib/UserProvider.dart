@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth/domain/repositories/Auth.dart';
+import 'auth/domain/repositories/auth.dart';
 import 'auth/domain/entities/User.dart';
 
 class UserProvider with ChangeNotifier {

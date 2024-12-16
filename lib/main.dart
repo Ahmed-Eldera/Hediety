@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:hediety/auth/domain/repositories/Auth.dart';
+import 'package:hediety/auth/domain/repositories/auth.dart';
 import 'package:provider/provider.dart';
 import 'UserProvider.dart';
 import 'auth/data/repositories/Login.dart';

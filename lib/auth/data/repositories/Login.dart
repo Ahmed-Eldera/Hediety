@@ -1,5 +1,5 @@
 import "package:hediety/auth/data/models/User.dart";
-import "package:hediety/auth/domain/repositories/Auth.dart";
+import "package:hediety/auth/domain/repositories/auth.dart";
 import "../../domain/entities/User.dart";
 import "../datasources/firebaseAuth.dart";
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
