@@ -3,6 +3,7 @@ import 'package:hediety/colors.dart';
 import 'package:provider/provider.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:hediety/widgets/MyButton.dart';
+import 'package:hediety/database_helper.dart';
 import 'package:hediety/widgets/MyTextField.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
@@ -21,10 +22,41 @@ class _EventCreationPageState extends State<EventCreationPage> {
   final TextEditingController descriptionController = TextEditingController();
 
   // Placeholder for the Save as Draft feature
-  void _saveAsDraft() {
-    // TODO: Implement saving to local database
-    print("Saving as Draft...");
+void _saveAsDraft() async {
+  // Validate inputs before saving
+  if (nameController.text.isEmpty ||
+      locationController.text.isEmpty ||
+      dateController.text.isEmpty ||
+      timeController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Please fill out all fields")),
+    );
+    return;
   }
+
+  // Create the draft event data
+  final draftEvent = {
+    'id': Uuid().v4(),
+    'name': nameController.text.trim(),
+    'description': descriptionController.text.trim(),
+    'location': locationController.text.trim(),
+    'date': dateController.text.trim(),
+    'time': timeController.text.trim(),
+    'category': "" // Add more categories as needed
+  };
+
+  // Save the event as a draft in SQLite
+  await DatabaseHelper.instance.insertEvent(draftEvent);
+
+  // Notify the user
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("Event saved as draft")),
+  );
+
+  // Optionally, go back to the previous page after saving
+  Navigator.of(context).pop();
+}
+
 
   // Function to create the event in Firestore
   Future<void> _createEvent() async {
@@ -55,6 +87,7 @@ class _EventCreationPageState extends State<EventCreationPage> {
       'description':descriptionController.text.trim(),
       'gifts': [],
       'coming': [],
+      'category':""
     };
 
     try {

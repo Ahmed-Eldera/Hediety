@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:hediety/colors.dart';
+import 'package:hediety/draftEvents.dart';
 import 'package:hediety/widgets/MyButton.dart';
 import 'package:hediety/widgets/MyTextField.dart';
 import 'package:provider/provider.dart';
@@ -127,6 +128,17 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                     backgroundColor: a7mar, // Button color
                     textColor: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 10), // Space between the buttons
+                Expanded(
+                  child: MyButton(
+                    label: 'draft',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context)=>ShowSavedEventsPage()));
+                    },
+                    backgroundColor: gold, // Button color
+                    textColor: Colors.black,
                   ),
                 ),
                 SizedBox(width: 10), // Space between the buttons

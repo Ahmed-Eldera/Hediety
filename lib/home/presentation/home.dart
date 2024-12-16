@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/colors.dart';
 import 'package:hediety/create_event/presentation/screens/create_event.dart';
+import 'package:hediety/events/presentation/screens/events.dart';
 import 'package:hediety/home/presentation/widgets/addFriendButton.dart';
 import 'package:hediety/home/presentation/widgets/header.dart';
 import 'package:hediety/widgets/MyButton.dart';
@@ -138,7 +139,7 @@ class FriendListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: bg,
+      color: lighter,
       margin: EdgeInsets.all(8),
       child: ListTile(
         leading: CircleAvatar(
@@ -159,7 +160,15 @@ class FriendListItem extends StatelessWidget {
           ],
         ),
         onTap: () {
-          print('Tapped on ${friend['username']}');
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => UserEventsPage(
+      userId: friend['id'], // The ID of the user whose events to show
+      isMyEvents: false, // Set this to true if it's your own events, false for others
+    ),
+  ),
+);
         },
       ),
     );

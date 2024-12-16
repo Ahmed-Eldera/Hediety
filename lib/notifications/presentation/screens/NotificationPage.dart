@@ -115,6 +115,7 @@ class _NotificationPageState extends State<NotificationPage> {
             'friendRequests': targetUserFriendRequests,
             'friends': targetUserFriends,
           });
+          _loadFriendRequests();
         } else {
           throw Exception("Friend request not found.");
         }
@@ -157,6 +158,7 @@ class _NotificationPageState extends State<NotificationPage> {
           transaction.update(currentUserDocRef, {
             'friendRequests': currentUserFriendRequests,
           });
+          _loadFriendRequests();
         } else {
           throw Exception("Friend request not found.");
         }
@@ -186,6 +188,7 @@ class _NotificationPageState extends State<NotificationPage> {
                   itemBuilder: (context, index) {
                     var request = friendRequests[index];
                     return Card(
+                      color: lighter,
                       margin: EdgeInsets.all(8),
                       child: ListTile(
                         leading: CircleAvatar(
@@ -214,7 +217,7 @@ class _NotificationPageState extends State<NotificationPage> {
                                   currentUserId: pro.user!.id, // Current user ID from provider
                                   targetUserId: request['userId'],
                                 );
-                                _loadFriendRequests(); // Refresh the requests list
+ // Refresh the requests list
                               },
                             ),
                           ],
