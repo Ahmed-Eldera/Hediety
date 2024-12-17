@@ -56,7 +56,8 @@ class _AddGiftPageState extends State<AddGiftPage> {
       "eventId": widget.eventId,
       "userId": currentUserId,
       "buyer": "", // Initially empty
-      "status": "available", // Initially available
+      "status": "available",
+      'pic':"" // Initially available
     };
 
     setState(() {

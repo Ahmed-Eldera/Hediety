@@ -4,6 +4,7 @@ import 'package:hediety/colors.dart';
 import 'package:provider/provider.dart'; // Import Provider for user data
 import 'package:hediety/UserProvider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hediety/gift/presentation/giftDetailsPage.dart'; // Import the GiftDetailPage
 
 class EventDetailPage extends StatelessWidget {
   final Map<String, dynamic> event; // Pass the event details as a map
@@ -108,7 +109,7 @@ class EventDetailPage extends StatelessWidget {
 
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     print(giftIds);
-                    return Center(child: Text('No gifts available.',style: TextStyle(color: Colors.white),)); // No gifts available
+                    return Center(child: Text('No gifts available.', style: TextStyle(color: Colors.white),)); // No gifts available
                   }
 
                   List<Map<String, dynamic>> gifts = snapshot.data!;
@@ -122,29 +123,40 @@ class EventDetailPage extends StatelessWidget {
                     itemCount: gifts.length,
                     itemBuilder: (context, index) {
                       var gift = gifts[index];
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[800],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            // Image.network(
-                            // gift['imageUrl'] ?? 'https://via.placeholder.com/150',
-                            //   height: 100,
-                            //   fit: BoxFit.cover,
-                            // ),
-                            SizedBox(height: 8),
-                            Text(
-                              gift['name'] ?? 'Gift ${index + 1}',
-                              style: TextStyle(color: Colors.white),
+                      return GestureDetector(
+                        onTap: () {
+                          // Navigate to GiftDetailPage and pass the gift data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GiftDetailsPage(giftId: gift['id']),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              gift['status'] ?? 'Status: Unknown',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
-                            ),
-                          ],
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: lighter,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            children: [
+                              // Image.network(
+                              // gift['imageUrl'] ?? 'https://via.placeholder.com/150',
+                              //   height: 100,
+                              //   fit: BoxFit.cover,
+                              // ),
+                              SizedBox(height: 8),
+                              Text(
+                                gift['name'] ?? 'Gift ${index + 1}',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              SizedBox(height: 4),
+                              Text(
+                                gift['status'] ?? 'Status: Unknown',
+                                style: TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
