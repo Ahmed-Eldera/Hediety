@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hediety/colors.dart';
 import 'package:hediety/database_helper.dart';
 
 class ShowSavedEventsPage extends StatefulWidget {
@@ -26,8 +27,10 @@ class _ShowSavedEventsPageState extends State<ShowSavedEventsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bg,
       appBar: AppBar(
-        title: Text('Saved Events'),
+        iconTheme: IconThemeData(color: Colors.white),
+        title: Text('Saved Events',style: TextStyle(backgroundColor: gold),),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -38,7 +41,7 @@ class _ShowSavedEventsPageState extends State<ShowSavedEventsPage> {
                 itemBuilder: (context, index) {
                   final event = _savedEvents[index];
                   return Card(
-                    color: Colors.grey[900],
+                    color: lighter,
                     margin: EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
                       title: Text(event['name'], style: TextStyle(color: Colors.white)),

@@ -95,6 +95,8 @@ void _saveAsDraft() async {
           .collection('events')
           .doc(eventId)
           .set(event);
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({'events':FieldValue.arrayUnion([eventId])});
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Event Created Successfully!")),
@@ -143,7 +145,9 @@ void _saveAsDraft() async {
     return Scaffold(
             backgroundColor: bg,
       appBar: AppBar(
-        title: Text("Create Event"),
+        iconTheme: IconThemeData(color: Colors.white),
+        backgroundColor: bg,
+        title: Text("Create Event",style: TextStyle(backgroundColor: gold),),
       ),
       body: Padding(
         

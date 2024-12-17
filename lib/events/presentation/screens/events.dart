@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hediety/colors.dart';
+import 'package:hediety/events/presentation/screens/eventDetails.dart';
 
 class UserEventsPage extends StatefulWidget {
   final String userId;  // User ID to fetch the events
@@ -56,7 +57,11 @@ class _UserEventsPageState extends State<UserEventsPage> {
           'id': doc.id,
           'name': doc['name'],
           'date': doc['date'],
-          'category': doc['category'], // Assuming there's a category field
+          'category': doc['category'],
+          'description':doc['description'],
+          'location':doc['location'],
+          'time':doc['time'],
+          'author':doc['author']
         });
       }
 
@@ -244,7 +249,7 @@ class _UserEventsPageState extends State<UserEventsPage> {
                                   style: TextStyle(color: Colors.white),
                                 ),
                                 onTap: () {
-                                  print('Tapped on event: ${event['name']}');
+                                 Navigator.push(context, MaterialPageRoute(builder: (context)=>EventDetailPage(event: event)));
                                   // Handle event tap here
                                 },
                               ),
