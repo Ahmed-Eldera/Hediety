@@ -23,7 +23,7 @@ class UserProvider with ChangeNotifier {
       _user = user;
       notifyListeners();
     } catch (error) {
-      print('3aaa');
+      print('3aaa' + error.toString());
       // MyError(message:'$error');
       throw error;
     }

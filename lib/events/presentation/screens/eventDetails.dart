@@ -3,6 +3,8 @@ import 'package:hediety/addGift.dart';
 import 'package:hediety/colors.dart';
 import 'package:provider/provider.dart'; // Import Provider for user data
 import 'package:hediety/UserProvider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class EventDetailPage extends StatelessWidget {
   final Map<String, dynamic> event; // Pass the event details as a map
 
@@ -12,6 +14,9 @@ class EventDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Access the current user's ID from the Provider
     final String currentUserId = Provider.of<UserProvider>(context).user!.id;
+
+    // Retrieve the 'gifts' field from the event document
+    List<String> giftIds = List<String>.from(event['gifts'] ?? []);
 
     return Scaffold(
       backgroundColor: bg,
@@ -47,11 +52,7 @@ class EventDetailPage extends StatelessWidget {
             // Event Info
             Text(
               event['description'] ?? 'Event Name',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 18),
             ),
             SizedBox(height: 8),
             Text(
@@ -59,7 +60,7 @@ class EventDetailPage extends StatelessWidget {
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             Text(
-              'Time: ${event['time'] ?? 'time'}',
+              'Time: ${event['time'] ?? 'Time'}',
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
             Text(
@@ -73,19 +74,16 @@ class EventDetailPage extends StatelessWidget {
             ),
             SizedBox(height: 24),
             // Conditionally Display Add Gift Button
-
-
-
-            // -------------------------------------------LOOK HEERREEE ture condition ------------------------------------------
-
-
-
-            
             if (true)
               ElevatedButton(
                 onPressed: () {
                   // TODO: Implement gift adding logic
-                  Navigator.push(context, MaterialPageRoute(builder: (context)=>AddGiftPage(eventId: event['id'])));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddGiftPage(eventId: event['id']),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: gold,
@@ -98,25 +96,58 @@ class EventDetailPage extends StatelessWidget {
             SizedBox(height: 24),
             // Gifts Grid
             Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: 6, // Stub with 6 items for now
-                itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(8),
+              child: FutureBuilder<List<Map<String, dynamic>>>( 
+                future: fetchGiftsData(giftIds),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator()); // Show loading indicator
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}')); // Show error message
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    print(giftIds);
+                    return Center(child: Text('No gifts available.',style: TextStyle(color: Colors.white),)); // No gifts available
+                  }
+
+                  List<Map<String, dynamic>> gifts = snapshot.data!;
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
                     ),
-                    child: Center(
-                      child: Text(
-                        'Gift ${index + 1}', // Stub gift name
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
+                    itemCount: gifts.length,
+                    itemBuilder: (context, index) {
+                      var gift = gifts[index];
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[800],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            // Image.network(
+                            // gift['imageUrl'] ?? 'https://via.placeholder.com/150',
+                            //   height: 100,
+                            //   fit: BoxFit.cover,
+                            // ),
+                            SizedBox(height: 8),
+                            Text(
+                              gift['name'] ?? 'Gift ${index + 1}',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              gift['status'] ?? 'Status: Unknown',
+                              style: TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -125,5 +156,21 @@ class EventDetailPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  // Fetch the gifts data from Firestore
+  Future<List<Map<String, dynamic>>> fetchGiftsData(List<String> giftIds) async {
+    List<Map<String, dynamic>> gifts = [];
+    for (String giftId in giftIds) {
+      try {
+        var giftDoc = await FirebaseFirestore.instance.collection('gifts').doc(giftId).get();
+        if (giftDoc.exists) {
+          gifts.add(giftDoc.data()!);
+        }
+      } catch (e) {
+        print('Error fetching gift data: $e');
+      }
+    }
+    return gifts;
   }
 }

@@ -61,7 +61,8 @@ class _UserEventsPageState extends State<UserEventsPage> {
           'description':doc['description'],
           'location':doc['location'],
           'time':doc['time'],
-          'author':doc['author']
+          'author':doc['author'],
+          'gifts':doc['gifts']
         });
       }
 
