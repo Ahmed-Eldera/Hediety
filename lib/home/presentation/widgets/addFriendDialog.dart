@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/UserProvider.dart';
+import 'package:hediety/image_handler.dart';
 import 'package:provider/provider.dart';
 
 class AddFriendDialog extends StatefulWidget {
@@ -105,7 +106,7 @@ Future<void> sendFriendRequest({
   @override
   Widget build(BuildContext context) {
     final pro = Provider.of<UserProvider>(context);
-
+  final ImageConverterr imageConverter = ImageConverterr();
     return AlertDialog(
       title: Text('Add Friend'),
       content: Column(
@@ -127,7 +128,7 @@ Future<void> sendFriendRequest({
                       children: [
                         CircleAvatar(
                           radius: 30,
-                          backgroundImage: NetworkImage(userData!['profilePicture'] ?? 'https://via.placeholder.com/150'),
+                          backgroundImage: userData!['pic'] !=null ?MemoryImage(imageConverter.stringToImage(userData!['pic'])!): NetworkImage('https://via.placeholder.com/150'),
                         ),
                         SizedBox(height: 10),
                         Text(userData!['username'] ?? 'No username'),

@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+import 'package:hediety/Image_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/colors.dart';
 import 'package:hediety/create_event/presentation/screens/create_event.dart';
+import 'package:hediety/draftEvents.dart';
 import 'package:hediety/events/presentation/screens/events.dart';
 import 'package:hediety/home/presentation/widgets/addFriendButton.dart';
 import 'package:hediety/home/presentation/widgets/header.dart';
@@ -18,6 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> friends = [];
   bool isLoading = true;
+
 
   @override
   void initState() {
@@ -38,6 +42,7 @@ class _HomePageState extends State<HomePage> {
         if (friendIds.isNotEmpty) {
           // Fetch each friend's details and events
           List<Map<String, dynamic>> fetchedFriends = [];
+          // List<Map<Uint8List, dynamic>> fetchedFriendspics = [];
           for (var friendId in friendIds) {
             var friendDoc = await FirebaseFirestore.instance.collection('users').doc(friendId).get();
             if (friendDoc.exists) {
@@ -48,9 +53,10 @@ class _HomePageState extends State<HomePage> {
                 'id': friendId,
                 'username': friendData['username'],
                 'phone': friendData['phone'],
-                'profilePicture': friendData['profilePicture'] ?? 'https://via.placeholder.com/150',
+                'pic': friendData['pic']  ?? 'https://via.placeholder.com/150',
                 'events': events,
               });
+
             }
           }
 
@@ -89,20 +95,38 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: bg,
+      appBar: HeaderWithIcons(name: pro.user!.name),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            HeaderWithIcons(name: pro.user!.name),
+            // HeaderWithIcons(name: pro.user!.name),
             SizedBox(height: 20),
             Center(
-              child: MyButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
-                },
-                label: 'Create Event',
-                backgroundColor: a7mar,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                                    Expanded(
+                    child:MyButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
+                    },
+                    label: 'Create Event',
+                    backgroundColor: a7mar,
+                  ),),
+                  SizedBox(width: 10,),
+                   Expanded(
+                    child:MyButton(
+                      label: 'Event Drafts',
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => ShowSavedEventsPage()));
+                      },
+                      backgroundColor: gold,
+                      textColor: Colors.black,
+                    ),),
+
+                ],
               ),
             ),
             SizedBox(height: 20),
@@ -133,7 +157,7 @@ class _HomePageState extends State<HomePage> {
 
 class FriendListItem extends StatelessWidget {
   final Map<String, dynamic> friend;
-
+  final ImageConverterr imageConverter = ImageConverterr();
   FriendListItem({required this.friend});
 
   @override
@@ -143,7 +167,7 @@ class FriendListItem extends StatelessWidget {
       margin: EdgeInsets.all(8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundImage: NetworkImage(friend['profilePicture']),
+          backgroundImage: friend['pic'].contains("https") ? NetworkImage(friend['pic']):MemoryImage(imageConverter.stringToImage(friend['pic'])!),
           radius: 25,
         ),
 

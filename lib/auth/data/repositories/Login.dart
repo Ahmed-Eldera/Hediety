@@ -13,7 +13,8 @@ class LoginRepository implements AuthRepository {
     return MyUser(
       id: user?.id ?? "",
       name: user?.name ?? "",
-      phone: user?.phone??""
+      phone: user?.phone??"",
+      pic: user?.pic??""
     );
   }
 

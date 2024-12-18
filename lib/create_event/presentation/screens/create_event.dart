@@ -8,7 +8,6 @@ import 'package:hediety/widgets/MyTextField.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
-
 class EventCreationPage extends StatefulWidget {
   @override
   _EventCreationPageState createState() => _EventCreationPageState();
@@ -21,51 +20,8 @@ class _EventCreationPageState extends State<EventCreationPage> {
   final TextEditingController timeController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
-  // Placeholder for the Save as Draft feature
-void _saveAsDraft() async {
-  // Validate inputs before saving
-  if (nameController.text.isEmpty ||
-      locationController.text.isEmpty ||
-      dateController.text.isEmpty ||
-      timeController.text.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Please fill out all fields")),
-    );
-    return;
-  }
-
-  // Create the draft event data
-  final draftEvent = {
-    'id': Uuid().v4(),
-    'name': nameController.text.trim(),
-    'description': descriptionController.text.trim(),
-    'location': locationController.text.trim(),
-    'date': dateController.text.trim(),
-    'time': timeController.text.trim(),
-    'category': "" // Add more categories as needed
-  };
-
-  // Save the event as a draft in SQLite
-  await DatabaseHelper.instance.insertEvent(draftEvent);
-
-  // Notify the user
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text("Event saved as draft")),
-  );
-
-  // Optionally, go back to the previous page after saving
-  Navigator.of(context).pop();
-}
-
-
-  // Function to create the event in Firestore
-  Future<void> _createEvent() async {
-    final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
-    var uuid = Uuid();
-    final String eventId = uuid.v4();  // Generates a random UUID (v4)
-
-
-    // Basic validation
+  // Save as Draft feature
+  void _saveAsDraft() async {
     if (nameController.text.isEmpty ||
         locationController.text.isEmpty ||
         dateController.text.isEmpty ||
@@ -76,7 +32,41 @@ void _saveAsDraft() async {
       return;
     }
 
-    // Create the event
+    final draftEvent = {
+      'id': Uuid().v4(),
+      'name': nameController.text.trim(),
+      'description': descriptionController.text.trim(),
+      'location': locationController.text.trim(),
+      'date': dateController.text.trim(),
+      'time': timeController.text.trim(),
+      'category': "",
+    };
+
+    await DatabaseHelper.instance.insertEvent(draftEvent);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Event saved as draft")),
+    );
+
+    Navigator.of(context).pop();
+  }
+
+  // Function to create the event in Firestore
+  Future<void> _createEvent() async {
+    final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
+    var uuid = Uuid();
+    final String eventId = uuid.v4(); // Generates a random UUID (v4)
+
+    if (nameController.text.isEmpty ||
+        locationController.text.isEmpty ||
+        dateController.text.isEmpty ||
+        timeController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Please fill out all fields")),
+      );
+      return;
+    }
+
     final event = {
       'id': eventId,
       'name': nameController.text.trim(),
@@ -84,10 +74,10 @@ void _saveAsDraft() async {
       'location': locationController.text.trim(),
       'date': dateController.text.trim(),
       'time': timeController.text.trim(),
-      'description':descriptionController.text.trim(),
+      'description': descriptionController.text.trim(),
       'gifts': [],
       'coming': [],
-      'category':""
+      'category': "",
     };
 
     try {
@@ -95,8 +85,10 @@ void _saveAsDraft() async {
           .collection('events')
           .doc(eventId)
           .set(event);
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({'events':FieldValue.arrayUnion([eventId])});
-
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .update({'events': FieldValue.arrayUnion([eventId])});
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Event Created Successfully!")),
@@ -143,81 +135,85 @@ void _saveAsDraft() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-            backgroundColor: bg,
+      backgroundColor: bg,
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: gold),
         backgroundColor: bg,
-        title: Text("Create Event",style: TextStyle(backgroundColor: gold),),
+        title: Text(
+          "Create Event",
+          style: TextStyle(color: gold),
+        ),
       ),
-      body: Padding(
-        
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            MyTextField(
-              controller: nameController,
-              labelText: "Event Name",
-              hintText: "Enter the event name",
-            ),
-            SizedBox(height: 16),
-                        MyTextField(
-              controller: descriptionController,
-              labelText: "Event description",
-              hintText: "Enter the description (optional)",
-            ),
-            SizedBox(height: 16),
-            MyTextField(
-              controller: locationController,
-              labelText: "Location",
-              hintText: "Enter the location",
-            ),
-            SizedBox(height: 16),
-            GestureDetector(
-              onTap: _pickDate,
-              child: AbsorbPointer(
-                child: MyTextField(
-                  controller: dateController,
-                  labelText: "Date",
-                  hintText: "Pick a date",
-                ),
+      body: SingleChildScrollView(  // Make the body scrollable
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              MyTextField(
+                controller: nameController,
+                labelText: "Event Name",
+                hintText: "Enter the event name",
               ),
-            ),
-            SizedBox(height: 16),
-            GestureDetector(
-              onTap: _pickTime,
-              child: AbsorbPointer(
-                child: MyTextField(
-                  controller: timeController,
-                  labelText: "Time",
-                  hintText: "Pick a time",
-                ),
+              SizedBox(height: 16),
+              MyTextField(
+                controller: descriptionController,
+                labelText: "Event Description",
+                hintText: "Enter the description (optional)",
               ),
-            ),
-            Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Expanded(
-                  child: MyButton(
-                    label: "Save as Draft",
-                    onPressed: _saveAsDraft,
-                    backgroundColor: gold,
-                    textColor: Colors.white,
+              SizedBox(height: 16),
+              MyTextField(
+                controller: locationController,
+                labelText: "Location",
+                hintText: "Enter the location",
+              ),
+              SizedBox(height: 16),
+              GestureDetector(
+                onTap: _pickDate,
+                child: AbsorbPointer(
+                  child: MyTextField(
+                    controller: dateController,
+                    labelText: "Date",
+                    hintText: "Pick a date",
                   ),
                 ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: MyButton(
-                    label: "Create",
-                    onPressed: _createEvent,
-                    backgroundColor: a7mar,
-                    textColor: Colors.white,
+              ),
+              SizedBox(height: 16),
+              GestureDetector(
+                onTap: _pickTime,
+                child: AbsorbPointer(
+                  child: MyTextField(
+                    controller: timeController,
+                    labelText: "Time",
+                    hintText: "Pick a time",
                   ),
                 ),
-              ],
-            ),
-          ],
+              ),
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: MyButton(
+                      label: "Save as Draft",
+                      onPressed: _saveAsDraft,
+                      backgroundColor: gold,
+                      textColor: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: MyButton(
+                      label: "Create",
+                      onPressed: _createEvent,
+                      backgroundColor: a7mar,
+                      textColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
