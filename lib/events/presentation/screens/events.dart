@@ -4,10 +4,10 @@ import 'package:hediety/colors.dart';
 import 'package:hediety/events/presentation/screens/eventDetails.dart';
 
 class UserEventsPage extends StatefulWidget {
-  final String userId;  // User ID to fetch the events
+  final String userId; // User ID to fetch the events
   final bool isMyEvents; // Flag to check if it's the current user's events
-
-  UserEventsPage({required this.userId, required this.isMyEvents});
+  ImageProvider<Object>? pic;
+  UserEventsPage({required this.userId, required this.isMyEvents, this.pic});
 
   @override
   _UserEventsPageState createState() => _UserEventsPageState();
@@ -55,14 +55,7 @@ class _UserEventsPageState extends State<UserEventsPage> {
       for (var doc in eventSnapshot.docs) {
         fetchedEvents.add({
           'id': doc.id,
-          'name': doc['name'],
-          'date': doc['date'],
-          'category': doc['category'],
-          'description':doc['description'],
-          'location':doc['location'],
-          'time':doc['time'],
-          'author':doc['author'],
-          'gifts':doc['gifts']
+          ...doc.data(),
         });
       }
 
@@ -76,6 +69,87 @@ class _UserEventsPageState extends State<UserEventsPage> {
       setState(() {
         isLoading = false;
       });
+    }
+  }
+
+  // Show edit dialog
+  void _showEditDialog(Map<String, dynamic> event) {
+    final nameController = TextEditingController(text: event['name']);
+    final dateController = TextEditingController(text: event['date']);
+    final timeController = TextEditingController(text: event['time']);
+    final locationController = TextEditingController(text: event['location']);
+    final descriptionController = TextEditingController(text: event['description']);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Edit Event'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: 'Name'),
+                ),
+                TextField(
+                  controller: dateController,
+                  decoration: InputDecoration(labelText: 'Date'),
+                ),
+                TextField(
+                  controller: timeController,
+                  decoration: InputDecoration(labelText: 'Time'),
+                ),
+                TextField(
+                  controller: locationController,
+                  decoration: InputDecoration(labelText: 'Location'),
+                ),
+                TextField(
+                  controller: descriptionController,
+                  decoration: InputDecoration(labelText: 'Description'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('events')
+                      .doc(event['id'])
+                      .update({
+                    'name': nameController.text,
+                    'date': dateController.text,
+                    'time': timeController.text,
+                    'location': locationController.text,
+                    'description': descriptionController.text,
+                  });
+                  Navigator.pop(context);
+                  _fetchEvents(); // Refresh the events
+                } catch (e) {
+                  print('Error updating event: $e');
+                }
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Delete event
+  void _deleteEvent(String eventId) async {
+    try {
+      await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
+      _fetchEvents(); // Refresh the events
+    } catch (e) {
+      print('Error deleting event: $e');
     }
   }
 
@@ -101,8 +175,10 @@ class _UserEventsPageState extends State<UserEventsPage> {
         if (statusFilter == 'Upcoming') {
           return eventDate.isAfter(now);
         } else if (statusFilter == 'Current') {
-          return eventDate.isBefore(now) && eventDate.isAfter(now.subtract(Duration(days: 1)));
-        } else { // Past
+          return eventDate.isBefore(now) &&
+              eventDate.isAfter(now.subtract(Duration(days: 1)));
+        } else {
+          // Past
           return eventDate.isBefore(now);
         }
       }).toList();
@@ -110,21 +186,20 @@ class _UserEventsPageState extends State<UserEventsPage> {
 
     // Filter by category
     if (categoryFilter != 'All') {
-      filtered = filtered.where((event) => event['category'] == categoryFilter).toList();
+      filtered = filtered
+          .where((event) => event['category'] == categoryFilter)
+          .toList();
     }
 
-  if (dateSort == 'Ascending') {
-  filtered.sort((a, b) {
-    DateTime dateA = DateTime.parse(a['date']); // Parse string into DateTime
-    DateTime dateB = DateTime.parse(b['date']); // Parse string into DateTime
-    return dateA.compareTo(dateB); // Compare the two DateTime objects
-  });
-} else {
-  filtered.sort((a, b) {
-    DateTime dateA = DateTime.parse(a['date']); // Parse string into DateTime
-    DateTime dateB = DateTime.parse(b['date']); // Parse string into DateTime
-    return dateB.compareTo(dateA); // Compare the two DateTime objects
-  });}
+    // Sort by date
+    if (dateSort == 'Ascending') {
+      filtered.sort((a, b) => DateTime.parse(a['date'])
+          .compareTo(DateTime.parse(b['date'])));
+    } else {
+      filtered.sort((a, b) => DateTime.parse(b['date'])
+          .compareTo(DateTime.parse(a['date'])));
+    }
+
     setState(() {
       filteredEvents = filtered;
     });
@@ -137,99 +212,16 @@ class _UserEventsPageState extends State<UserEventsPage> {
       appBar: AppBar(
         backgroundColor: bg,
         iconTheme: IconThemeData(color: Colors.white),
-        title: Text(widget.isMyEvents ? 'My Events' : '$userName\'s Events',style: TextStyle(color:gold ),),
+        title: Text(
+          widget.isMyEvents ? 'My Events' : '$userName\'s Events',
+          style: TextStyle(color: gold),
+        ),
       ),
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      // Sort and Filter section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Name filter
-                          Expanded(
-                            child: TextField(
-                              decoration: InputDecoration(
-                                labelText: 'Search by name',
-                                fillColor: Colors.white,
-                                filled: true,
-                                border: OutlineInputBorder(),
-                              ),
-                              onChanged: (value) {
-                                setState(() {
-                                  eventNameFilter = value;
-                                });
-                                _applyFiltersAndSort();
-                              },
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          // Status filter
-                          DropdownButton<String>(
-                            value: statusFilter,
-                            items: ['All', 'Upcoming', 'Current', 'Past']
-                                .map((status) => DropdownMenuItem(
-                                      value: status,
-                                      child: Text(status),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                statusFilter = value!;
-                              });
-                              _applyFiltersAndSort();
-                            },
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Category filter
-                          DropdownButton<String>(
-                            value: categoryFilter,
-                            items: ['All', 'Personal', 'Work', 'Family']
-                                .map((category) => DropdownMenuItem(
-                                      value: category,
-                                      child: Text(category),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                categoryFilter = value!;
-                              });
-                              _applyFiltersAndSort();
-                            },
-                          ),
-                          SizedBox(width: 10),
-                          // Date sorting
-                          DropdownButton<String>(
-                            value: dateSort,
-                            items: ['Ascending', 'Descending']
-                                .map((sort) => DropdownMenuItem(
-                                      value: sort,
-                                      child: Text(sort),
-                                    ))
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                dateSort = value!;
-                              });
-                              _applyFiltersAndSort();
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Events List
+                // Filter and sorting UI...
                 Expanded(
                   child: filteredEvents.isEmpty
                       ? Center(child: Text('No events found.'))
@@ -238,20 +230,44 @@ class _UserEventsPageState extends State<UserEventsPage> {
                           itemBuilder: (context, index) {
                             var event = filteredEvents[index];
                             return Card(
-                              margin: EdgeInsets.all(8),
-                              color: lighter,  // Set the background color of the card
+                              color: lighter,
                               child: ListTile(
                                 title: Text(
                                   event['name'],
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
-                                ),
-                                subtitle: Text(
-                                  'Date: ${ event['date']}',
                                   style: TextStyle(color: Colors.white),
                                 ),
+                                subtitle: Text(
+                                  'Date: ${event['date']}',
+                                  style: TextStyle(color: Colors.white70),
+                                ),
+                                trailing: widget.isMyEvents
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.edit, color: gold),
+                                            onPressed: () =>
+                                                _showEditDialog(event),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.delete,
+                                                color: Colors.red),
+                                            onPressed: () =>
+                                                _deleteEvent(event['id']),
+                                          ),
+                                        ],
+                                      )
+                                    : null,
                                 onTap: () {
-                                 Navigator.push(context, MaterialPageRoute(builder: (context)=>EventDetailPage(event: event)));
-                                  // Handle event tap here
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => EventDetailPage(
+                                        event: event,
+                                        pic: widget.pic,
+                                      ),
+                                    ),
+                                  );
                                 },
                               ),
                             );

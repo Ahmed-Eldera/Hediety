@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hediety/image_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hediety/colors.dart';
@@ -29,7 +32,19 @@ class _AddGiftPageState extends State<AddGiftPage> {
     "Other"
   ];
 
+  String? _giftImage; // Base64 string of the selected gift image
   bool _isSaving = false;
+
+  final ImageConverterr imageConverter = ImageConverterr(); // Initialize ImageConverterr
+
+  Future<void> _pickGiftImage() async {
+    String? base64Image = await imageConverter.pickAndCompressImageToString();
+    if (base64Image != null) {
+      setState(() {
+        _giftImage = base64Image;
+      });
+    }
+  }
 
   Future<void> _saveGift() async {
     // Validate inputs
@@ -57,7 +72,7 @@ class _AddGiftPageState extends State<AddGiftPage> {
       "userId": currentUserId,
       "buyer": "", // Initially empty
       "status": "available",
-      'pic':"" // Initially available
+      'pic': _giftImage ?? "" // Use the base64 image string or an empty string if no image is selected
     };
 
     setState(() {
@@ -67,7 +82,7 @@ class _AddGiftPageState extends State<AddGiftPage> {
     // Save to Firestore
     try {
       await FirebaseFirestore.instance.collection("gifts").doc(giftId).set(giftData);
-      await FirebaseFirestore.instance.collection("events").doc(widget.eventId).update({'gifts':FieldValue.arrayUnion([giftId])});
+      await FirebaseFirestore.instance.collection("events").doc(widget.eventId).update({'gifts': FieldValue.arrayUnion([giftId])});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Gift added successfully!")),
       );
@@ -85,6 +100,8 @@ class _AddGiftPageState extends State<AddGiftPage> {
 
   @override
   Widget build(BuildContext context) {
+    Uint8List? imageBytes = _giftImage != null ? imageConverter.stringToImage(_giftImage!) : null;
+
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
@@ -101,15 +118,20 @@ class _AddGiftPageState extends State<AddGiftPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Placeholder for image picker (to be implemented later)
-              Container(
-                height: 150,
-                color: Colors.grey[800],
-                child: Center(
-                  child: Text(
-                    "Image Placeholder (Image Picker to be added)",
-                    style: TextStyle(color: Colors.white70),
-                  ),
+              // Gift Image Picker
+              GestureDetector(
+                onTap: _pickGiftImage,
+                child: Container(
+                  height: 150,
+                  color: Colors.grey[800],
+                  child: imageBytes != null
+                      ? Image.memory(imageBytes, fit: BoxFit.cover)
+                      : Center(
+                          child: Text(
+                            "Tap to pick image",
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
                 ),
               ),
               SizedBox(height: 24),

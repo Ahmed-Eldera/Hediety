@@ -162,12 +162,14 @@ class FriendListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    ImageProvider<Object> img =friend['pic'].contains("https") ? NetworkImage(friend['pic']):MemoryImage(imageConverter.stringToImage(friend['pic'])!);
     return Card(
       color: lighter,
       margin: EdgeInsets.all(8),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundImage: friend['pic'].contains("https") ? NetworkImage(friend['pic']):MemoryImage(imageConverter.stringToImage(friend['pic'])!),
+
+          backgroundImage: img ,
           radius: 25,
         ),
 
@@ -189,7 +191,8 @@ Navigator.push(
   MaterialPageRoute(
     builder: (context) => UserEventsPage(
       userId: friend['id'], // The ID of the user whose events to show
-      isMyEvents: false, // Set this to true if it's your own events, false for others
+      isMyEvents: false,
+      pic:img // Set this to true if it's your own events, false for others
     ),
   ),
 );

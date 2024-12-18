@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/colors.dart';
-import 'package:provider/provider.dart'; // To get the current user's ID
-import 'package:hediety/UserProvider.dart'; // Assuming this provider has the user info
+import 'package:hediety/image_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:hediety/UserProvider.dart';
 
 class GiftDetailsPage extends StatefulWidget {
   final String giftId;
@@ -14,7 +15,10 @@ class GiftDetailsPage extends StatefulWidget {
 }
 
 class _GiftDetailsPageState extends State<GiftDetailsPage> {
-  String status = 'available'; // Initial status of the gift
+  
+  final ImageConverterr imageConverter = ImageConverterr();
+
+  String status = 'available';
   String? buyerId;
 
   @override
@@ -23,7 +27,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     _fetchGiftDetails();
   }
 
-  // Fetch gift details to get the initial status and buyer ID
   Future<void> _fetchGiftDetails() async {
     try {
       DocumentSnapshot giftSnapshot = await FirebaseFirestore.instance
@@ -43,9 +46,191 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     }
   }
 
+  Future<void> _deleteGift(BuildContext context) async {
+    try {
+      await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).delete();
+      Navigator.of(context).pop(); // Navigate back after deletion
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift deleted successfully')));
+    } catch (e) {
+      print('Error deleting gift: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting gift')));
+    }
+  }
+
+Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift) async {
+  String updatedName = gift['name'];
+  String updatedPrice = gift['price'];
+  String updatedDescription = gift['description'];
+  String updatedCategory = gift['category'] ?? 'other'; // Default to 'other'
+  String? updatedImage = gift['pic'];
+  bool isChanged = false;
+
+  Future<void> _pickProfileImage() async {
+    String? base64Image = await imageConverter.pickAndCompressImageToString();
+    if (base64Image != null) {
+      updatedImage = base64Image;
+      isChanged = true;
+    }
+  }
+
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Edit Gift", style: TextStyle(color: gold)),
+        backgroundColor: bg,
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Name field
+                  TextField(
+                    controller: TextEditingController(text: updatedName),
+                    onChanged: (value) => updatedName = value,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Gift Name",
+                      labelStyle: TextStyle(color: gold),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  // Price field
+                  TextField(
+                    controller: TextEditingController(text: updatedPrice),
+                    onChanged: (value) => updatedPrice = value,
+                    keyboardType: TextInputType.number,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Price",
+                      labelStyle: TextStyle(color: gold),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  // Description field
+                  TextField(
+                    controller: TextEditingController(text: updatedDescription),
+                    onChanged: (value) => updatedDescription = value,
+                    maxLines: 3,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Description",
+                      labelStyle: TextStyle(color: gold),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  // Category dropdown
+                  DropdownButtonFormField<String>(
+                    value: updatedCategory,
+                    onChanged: (value) => setState(() {
+                      updatedCategory = value!;
+                    }),
+                    dropdownColor: bg,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Category",
+                      labelStyle: TextStyle(color: gold),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: gold),
+                      ),
+                    ),
+                    items: [
+                      "home appliances",
+                      "electronics",
+                      "fashion",
+                      "food",
+                      "books",
+                      "other"
+                    ].map((String category) {
+                      return DropdownMenuItem<String>(
+                        value: category,
+                        child: Text(category, style: TextStyle(color: Colors.white)),
+                      );
+                    }).toList(),
+                  ),
+                  SizedBox(height: 16),
+                  // Image picker
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _pickProfileImage();
+                      setState(() {}); // Refresh dialog to show updated image
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: laser),
+                    child: Text("Edit Image", style: TextStyle(color: Colors.white)),
+                  ),
+                  if (updatedImage != null)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Image.memory(
+                        imageConverter.stringToImage(updatedImage!)!,
+                        height: 100,
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(), // Close dialog without saving
+            child: Text("Cancel", style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              // Save the updated data to Firestore
+              try {
+                await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({
+                  'name': updatedName,
+                  'price': updatedPrice,
+                  'description': updatedDescription,
+                  'category': updatedCategory,
+                  if (isChanged) 'pic': updatedImage, // Only update the image if changed
+                });
+                Navigator.of(context).pop(); // Close dialog after saving
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully')));
+              } catch (e) {
+                print('Error updating gift: $e');
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating gift')));
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: gold),
+            child: Text("Save", style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+
   @override
   Widget build(BuildContext context) {
     final String currentUserId = Provider.of<UserProvider>(context).user!.id;
+    final ImageConverterr imageConverter = ImageConverterr();
+    final double imageSize = MediaQuery.of(context).size.width * 0.5;
 
     return Scaffold(
       backgroundColor: bg,
@@ -70,30 +255,28 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
           }
 
           var gift = snapshot.data!.data() as Map<String, dynamic>;
+          bool isOwner = gift['userId'] == currentUserId;
 
-          String imageUrl = gift['imageUrl'] ?? 'https://via.placeholder.com/150';
+          String imageUrl = gift['pic'] ?? 'https://via.placeholder.com/150';
           String name = gift['name'] ?? 'Gift Name';
           String description = gift['description'] ?? 'No description available';
           String price = gift['price'] ?? 'Price not available';
 
-          // Determine the button color based on the status
           Color buttonColor;
           Color fontColor;
           String buttonText;
           if (status == 'pledged') {
             buttonColor = a7mar;
-            fontColor=Colors.white;
+            fontColor = Colors.white;
             buttonText = 'Pledged';
           } else if (status == 'bought') {
             buttonColor = gold;
-            
-            fontColor=Colors.black;
+            fontColor = Colors.black;
             buttonText = 'Bought';
           } else {
             buttonColor = Colors.green;
+            fontColor = Colors.white;
             buttonText = 'Available';
-            
-            fontColor=Colors.white;
           }
 
           return Padding(
@@ -101,153 +284,85 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Display the gift image
-                Center(
-                  child: Image.network(
-                    imageUrl,
-                    height: 200,
-                    width: 200,
-                    fit: BoxFit.cover,
+                GestureDetector(
+                  onTap: isOwner ?()=>{}  : null,
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.grey[800],
+                    ),
+                    child: gift['pic'] == null
+                        ? Image(image: NetworkImage(imageUrl))
+                        : Image(image: MemoryImage(imageConverter.stringToImage(gift['pic'])!)),
                   ),
                 ),
                 SizedBox(height: 16),
-                // Display the gift name
                 Text(
                   name,
                   style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
-                // Display the gift description
                 Text(
                   description,
                   style: TextStyle(color: Colors.white, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 8),
-                // Display the gift price
                 Text(
                   'Price: \$${price}',
                   style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
                 SizedBox(height: 24),
-                // Display the status button
-                ElevatedButton(
-                  onPressed: () async {
-                    // Show a loading indicator while updating the status
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => Center(child: CircularProgressIndicator()),
-                    );
-
-                    try {
-                      if (status == 'available') {
-                        // If the gift is available, update it to pledged
-                        await updateGiftStatus(context, currentUserId, 'pledged', buyerId);
-                      } else if (status == 'pledged') {
-                        // If the gift is pledged, update it to bought
-                        await updateGiftStatus(context, currentUserId, 'bought', buyerId);
-                      } else if (status == 'bought') {
-                        // If the gift is bought, update it to available
-                        await updateGiftStatus(context, currentUserId, 'available', buyerId);
-                      }
-                    } catch (e) {
-                      print('Error updating gift status: $e');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: buttonColor,
+                if (isOwner)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () async{
+                          var giftData = await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).get();
+                          if (giftData.exists) {
+                            _showEditGiftDialog(context, giftData.data()! as Map<String, dynamic>);
+                        }},
+                        style: ElevatedButton.styleFrom(backgroundColor: gold),
+                        child: Text("Edit", style: TextStyle(color: Colors.black)),
+                      ),
+                      SizedBox(width: 10),
+                      ElevatedButton(
+                        onPressed: () => _deleteGift(context),
+                        style: ElevatedButton.styleFrom(backgroundColor: a7mar),
+                        child: Text("Delete", style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
                   ),
-                  child: Text(
-                    buttonText,
-                    style: TextStyle(color: fontColor),
+                if (!isOwner)
+                  ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: Text("Action not allowed"),
+                            content: Text("You can't pledge or buy your own gift."),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: Text("OK"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: buttonColor),
+                    child: Text(buttonText, style: TextStyle(color: fontColor)),
                   ),
-                ),
               ],
             ),
           );
         },
       ),
     );
-  }
-
-  Future<void> updateGiftStatus(BuildContext context, String currentUserId, String newStatus, String? buyerId) async {
-    try {
-      if (newStatus != 'pledged' && (buyerId != null && buyerId != currentUserId)) {
-        // Show an error if the gift is pledged by someone else
-        Navigator.of(context).pop(); // Close the loading indicator
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Gift Pledged'),
-              content: Text('This gift is already pledged by someone else.'),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('OK'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-        return;
-      }
-
-      // Firestore transaction to update the gift's status
-      FirebaseFirestore.instance.runTransaction((transaction) async {
-        DocumentReference giftRef = FirebaseFirestore.instance.collection('gifts').doc(widget.giftId);
-        DocumentSnapshot snapshot = await transaction.get(giftRef);
-
-        if (!snapshot.exists) {
-          throw Exception('Gift not found');
-        }
-
-        Map<String, dynamic> giftData = snapshot.data() as Map<String, dynamic>;
-
-        // Update the status and buyer ID as needed
-        Map<String, dynamic> updatedData = {
-          'status': newStatus,
-          'buyer':""
-        };
-
-        if (newStatus == 'pledged' ||newStatus == 'bought') {
-          updatedData['buyer'] = currentUserId;
-        } else if (newStatus == 'available' && giftData['buyer'] == currentUserId) {
-          updatedData['buyer']="";
-        }
-
-        transaction.update(giftRef, updatedData);
-      });
-
-      Navigator.of(context).pop(); // Close the loading indicator
-      setState(() {
-        status = newStatus; // Update the status locally
-      });
-
-      print('Gift status updated to $newStatus');
-    } catch (e) {
-      Navigator.of(context).pop(); // Close the loading indicator
-      print('Error updating gift status: $e');
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('There was an error updating the gift status.'),
-            actions: <Widget>[
-              TextButton(
-                child: Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
   }
 }

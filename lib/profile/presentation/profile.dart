@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:hediety/colors.dart';
 import 'package:hediety/draftEvents.dart';
+import 'package:hediety/events/presentation/screens/events.dart';
 import 'package:hediety/widgets/MyButton.dart';
 import 'package:hediety/widgets/MyTextField.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +23,7 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController usernameController;
   late TextEditingController phoneController;
   late TextEditingController passwordController;
-
+  String? id;
   final ImageConverterr imageConverter = ImageConverterr();
 
   @override
@@ -32,7 +33,8 @@ class _ProfilePageState extends State<ProfilePage> {
     usernameController = TextEditingController(text: pro.user!.name);
     phoneController = TextEditingController(text: pro.user!.phone);
     passwordController = TextEditingController();
-    profilePic = pro.user!.pic; // Load the user's current profile pic
+    profilePic = pro.user!.pic; 
+    id=pro.user!.id;
   }
 
   Future<void> _pickProfileImage() async {
@@ -109,7 +111,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        title: Text('Profile', style: TextStyle(color: Colors.white)),
+        title: Text('Profile', style: TextStyle(color: gold)),
         iconTheme: IconThemeData(color: Colors.white),
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -197,7 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: MyButton(
                       label: 'My Events',
                       onPressed: () {
-                        Navigator.of(context).pushReplacementNamed('/myevents');
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>UserEventsPage(userId: id!, isMyEvents: true,pic: MemoryImage(imageConverter.stringToImage(profilePic!)!) ,)));
                       },
                       backgroundColor: a7mar,
                       textColor: Colors.white,
@@ -205,7 +207,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(width: 10),
                  
- MyButton(
+                 Expanded(
+                    child:MyButton(
                       label: 'My Pledged Gifts',
                       onPressed: () {
                         print('My Pledged Gifts button pressed');
@@ -213,7 +216,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       backgroundColor: gold,
                       textColor: Colors.black,
                     ),
-                  
+                                        )
                 ],
               ),
             ],
