@@ -88,53 +88,54 @@ class _HomePageState extends State<HomePage> {
       return [];
     }
   }
+@override
+Widget build(BuildContext context) {
+  final pro = Provider.of<UserProvider>(context);
 
-  @override
-  Widget build(BuildContext context) {
-    final pro = Provider.of<UserProvider>(context);
-
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: HeaderWithIcons(name: pro.user!.name),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // HeaderWithIcons(name: pro.user!.name),
-            SizedBox(height: 20),
-            Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                                    Expanded(
-                    child:MyButton(
+  return Scaffold(
+    backgroundColor: bg,
+    appBar: HeaderWithIcons(name: pro.user!.name),
+    body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 20),
+          Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: MyButton(
                     onPressed: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
                     },
                     label: 'Create Event',
                     backgroundColor: a7mar,
-                  ),),
-                  SizedBox(width: 10,),
-                   Expanded(
-                    child:MyButton(
-                      label: 'Event Drafts',
-                      onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => ShowSavedEventsPage()));
-                      },
-                      backgroundColor: gold,
-                      textColor: Colors.black,
-                    ),),
-
-                ],
-              ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                Expanded(
+                  child: MyButton(
+                    label: 'Event Drafts',
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => ShowSavedEventsPage()));
+                    },
+                    backgroundColor: gold,
+                    textColor: Colors.black,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(height: 20),
-            isLoading
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: isLoading
                 ? Center(child: CircularProgressIndicator())
                 : friends.isEmpty
                     ? Center(child: Text('You have no friends or they have no events'))
-                    : Expanded(
+                    : RefreshIndicator(
+                        onRefresh: _loadFriends, // Function to call when refreshed
                         child: ListView.builder(
                           itemCount: friends.length,
                           itemBuilder: (context, index) {
@@ -143,16 +144,17 @@ class _HomePageState extends State<HomePage> {
                           },
                         ),
                       ),
-          ],
-        ),
+          ),
+        ],
       ),
-      floatingActionButton: AddFriendButton(
-        onPressed: () {
-          print('Add friends button pressed');
-        },
-      ),
-    );
-  }
+    ),
+    floatingActionButton: AddFriendButton(
+      onPressed: () {
+        print('Add friends button pressed');
+      },
+    ),
+  );
+}
 }
 
 class FriendListItem extends StatelessWidget {

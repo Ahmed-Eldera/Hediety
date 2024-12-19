@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hediety/colors.dart';
@@ -54,6 +55,33 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     } catch (e) {
       print('Error deleting gift: $e');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting gift')));
+    }
+  }
+  Future<void> _pledgeBuy(BuildContext context,Map<String, dynamic> gift) async {
+    final pro = Provider.of<UserProvider>(context,listen: false).user!.id;
+    try {
+      if(gift['buyer']==null|| gift['buyer']==pro ||  gift['buyer']==""){
+      if(gift['status']=='available')
+      {await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({'status':"pledged",'buyer':pro});
+      await FirebaseFirestore.instance.collection('users').doc(pro).update({'pledgedGifts':FieldValue.arrayUnion([gift['id']])});
+      }else if (gift['status']=='pledged' )
+      {await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({'status':"bought"});
+      }else if(gift['status']=='bought')
+      {await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({'status':"available",'buyer':""});
+      await FirebaseFirestore.instance.collection('users').doc(pro).update({'pledgedGifts':FieldValue.arrayRemove([gift['id']])});
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully')));
+
+      }
+      else{
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('you are not the pledger')));
+        
+      }
+    } catch (e) {
+      print('Error deleting gift: $e');
+      print(e.toString());
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating gift')));
     }
   }
 
@@ -284,6 +312,7 @@ Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Row(),
                 GestureDetector(
                   onTap: isOwner ?()=>{}  : null,
                   child: Container(
@@ -338,23 +367,11 @@ Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift
                   ),
                 if (!isOwner)
                   ElevatedButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: Text("Action not allowed"),
-                            content: Text("You can't pledge or buy your own gift."),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text("OK"),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
+                    onPressed: (){
+                      _pledgeBuy(context,gift);
+                    setState(() {
+                      _fetchGiftDetails();
+                    });},
                     style: ElevatedButton.styleFrom(backgroundColor: buttonColor),
                     child: Text(buttonText, style: TextStyle(color: fontColor)),
                   ),

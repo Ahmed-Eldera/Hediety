@@ -6,18 +6,26 @@ import 'package:hediety/widgets/MyTextField.dart';
 import 'package:provider/provider.dart';
 import '../../data/repositories/Signup.dart';
 
-class SignupPage extends StatelessWidget {
+class SignupPage extends StatefulWidget {
   final RemoteDataSource remoteDataSource;
-  late final signupRepository = SignupRepository(remoteDataSource);
+
   SignupPage({required this.remoteDataSource, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final TextEditingController passwordController = TextEditingController();
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  late final signupRepository = SignupRepository(widget.remoteDataSource);
+   final TextEditingController passwordController = TextEditingController();
     final TextEditingController emailController = TextEditingController();
     final TextEditingController usernameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
 
+
+  @override
+  Widget build(BuildContext context) {
+   
     final pro = Provider.of<UserProvider>(context);
 
     Future<void> _signup(BuildContext context) async {

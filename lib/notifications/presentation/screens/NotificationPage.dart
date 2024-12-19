@@ -116,6 +116,9 @@ class _NotificationPageState extends State<NotificationPage> {
             'friends': targetUserFriends,
           });
           _loadFriendRequests();
+          setState(() {
+            
+          });
         } else {
           throw Exception("Friend request not found.");
         }
@@ -168,64 +171,120 @@ class _NotificationPageState extends State<NotificationPage> {
     }
     _loadFriendRequests();
   }
+@override
+Widget build(BuildContext context) {
+  final pro = Provider.of<UserProvider>(context);
 
-  @override
-  Widget build(BuildContext context) {
-    final pro = Provider.of<UserProvider>(context);
-    return Scaffold(
+  return Scaffold(
+    backgroundColor: bg,
+    appBar: AppBar(
+      title: Text('Friend Requests', style: TextStyle(color: gold)),
       backgroundColor: bg,
-      appBar: AppBar(
-        title: Text('Friend Requests',style: TextStyle(color: gold),),
-        backgroundColor: bg,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : friendRequests.isEmpty
-              ? Center(child: Text('No friend requests',style: TextStyle(color: Colors.white),))
-              : ListView.builder(
-                  itemCount: friendRequests.length,
-                  itemBuilder: (context, index) {
-                    var request = friendRequests[index];
-                    return Card(
-                      color: lighter,
-                      margin: EdgeInsets.all(8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(request['profilePicture'] ?? 'https://via.placeholder.com/150'),
+      iconTheme: IconThemeData(color: Colors.white),
+    ),
+    body: StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+          return Center(
+            child: Text('Failed to load friend requests', style: TextStyle(color: Colors.white)),
+          );
+        }
+
+        // Extract friend request IDs
+        List<dynamic> friendRequestIds = snapshot.data!['friendRequests'] ?? [];
+
+        if (friendRequestIds.isEmpty) {
+          return Center(child: Text('No friend requests', style: TextStyle(color: Colors.white)));
+        }
+
+        // Load the details for each friend request dynamically
+        return FutureBuilder<List<Map<String, dynamic>>>(
+          future: _fetchFriendRequestDetails(friendRequestIds),
+          builder: (context, asyncSnapshot) {
+            if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+
+            if (asyncSnapshot.hasError || !asyncSnapshot.hasData) {
+              return Center(
+                child: Text('Error loading friend requests', style: TextStyle(color: Colors.white)),
+              );
+            }
+
+            List<Map<String, dynamic>> friendRequests = asyncSnapshot.data!;
+
+            return ListView.builder(
+              itemCount: friendRequests.length,
+              itemBuilder: (context, index) {
+                var request = friendRequests[index];
+                return Card(
+                  color: lighter,
+                  margin: EdgeInsets.all(8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: NetworkImage(request['profilePicture'] ?? 'https://via.placeholder.com/150'),
+                    ),
+                    title: Text(
+                      request['username'] ?? 'No name',
+                      style: TextStyle(color: a7mar),
+                    ),
+                    subtitle: Text(request['phone'] ?? 'No phone number', style: TextStyle(color: Colors.white)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.check, color: Colors.green),
+                          onPressed: () {
+                            acceptFriendRequest(
+                              currentUserId: pro.user!.id, // Current user ID from provider
+                              targetUserId: request['userId'],
+                            );
+                          },
                         ),
-                        title: Text(request['username'] ?? 'No name',
-                        style: TextStyle(color: a7mar),),
-                        subtitle: Text(request['phone'] ?? 'No phone number',style: TextStyle(color: Colors.white),),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.check, color: Colors.green),
-                              onPressed: () {
-                                acceptFriendRequest(
-                                  currentUserId: pro.user!.id, // Current user ID from provider
-                                  targetUserId: request['userId'],
-                                );
-                                _loadFriendRequests(); // Refresh the requests list
-                              },
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.close, color: Colors.red),
-                              onPressed: () {
-                                declineFriendRequest(
-                                  currentUserId: pro.user!.id, // Current user ID from provider
-                                  targetUserId: request['userId'],
-                                );
- // Refresh the requests list
-                              },
-                            ),
-                          ],
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.red),
+                          onPressed: () {
+                            declineFriendRequest(
+                              currentUserId: pro.user!.id, // Current user ID from provider
+                              targetUserId: request['userId'],
+                            );
+                          },
                         ),
-                      ),
-                    );
-                  },
-                ),
-    );
-  }
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    ),
+  );
 }
+
+// Helper function to fetch friend request details
+Future<List<Map<String, dynamic>>> _fetchFriendRequestDetails(List<dynamic> friendRequestIds) async {
+  List<Map<String, dynamic>> requests = [];
+  for (var Id in friendRequestIds) {
+    var friendDoc = await FirebaseFirestore.instance.collection('users').doc(Id).get();
+    if (friendDoc.exists) {
+      var friendData = friendDoc.data();
+      requests.add({
+        'username': friendData?['username'],
+        'phone': friendData?['phone'],
+        'profilePicture': friendData?['profilePicture'],
+        'userId': Id,
+      });
+    }
+  }
+  return requests;
+}
+
+  }
+

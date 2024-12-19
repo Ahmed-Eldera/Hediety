@@ -5,6 +5,7 @@ import 'package:hediety/UserProvider.dart';
 import 'package:hediety/colors.dart';
 import 'package:hediety/draftEvents.dart';
 import 'package:hediety/events/presentation/screens/events.dart';
+import 'package:hediety/pledged.dart';
 import 'package:hediety/widgets/MyButton.dart';
 import 'package:hediety/widgets/MyTextField.dart';
 import 'package:provider/provider.dart';
@@ -211,7 +212,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child:MyButton(
                       label: 'My Pledged Gifts',
                       onPressed: () {
-                        print('My Pledged Gifts button pressed');
+                        Navigator.push(context, MaterialPageRoute(builder: (context)=>PledgedGiftsPage()));
                       },
                       backgroundColor: gold,
                       textColor: Colors.black,

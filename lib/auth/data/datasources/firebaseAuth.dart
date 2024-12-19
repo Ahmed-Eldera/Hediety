@@ -41,7 +41,7 @@ class RemoteDataSource {
           name: data['username'] ?? '',
           email: data['email'] ?? '',
           phone: data['phone'] ?? '',
-                    pic: data['pic'] ?? '',
+          pic: data['pic'] ?? '',
         );
       } else {
         throw Exception('User data not found');
