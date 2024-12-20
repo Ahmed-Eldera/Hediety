@@ -210,7 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                  
                  Expanded(
                     child:MyButton(
-                      label: 'My Pledged Gifts',
+                      label: 'Pledged Gifts',
                       onPressed: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context)=>PledgedGiftsPage()));
                       },

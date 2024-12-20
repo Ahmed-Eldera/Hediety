@@ -47,16 +47,135 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     }
   }
 
-  Future<void> _deleteGift(BuildContext context) async {
-    try {
-      await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).delete();
-      Navigator.of(context).pop(); // Navigate back after deletion
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift deleted successfully')));
-    } catch (e) {
-      print('Error deleting gift: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting gift')));
-    }
+Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift) async {
+  if (gift['status'] != 'available') {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Gift cannot be edited unless it is available')),
+    );
+    return;
   }
+
+  String updatedName = gift['name'];
+  String updatedPrice = gift['price'];
+  String updatedDescription = gift['description'];
+
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text("Edit Gift", style: TextStyle(color: gold)),
+        backgroundColor: bg,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Name field
+            TextField(
+              controller: TextEditingController(text: updatedName),
+              onChanged: (value) => updatedName = value,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Gift Name",
+                labelStyle: TextStyle(color: gold),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+              ),
+            ),
+            SizedBox(height: 8),
+            // Price field
+            TextField(
+              controller: TextEditingController(text: updatedPrice),
+              onChanged: (value) => updatedPrice = value,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Price",
+                labelStyle: TextStyle(color: gold),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+              ),
+            ),
+            SizedBox(height: 8),
+            // Description field
+            TextField(
+              controller: TextEditingController(text: updatedDescription),
+              onChanged: (value) => updatedDescription = value,
+              maxLines: 3,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: "Description",
+                labelStyle: TextStyle(color: gold),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: gold),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text("Cancel", style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({
+                  'name': updatedName,
+                  'price': updatedPrice,
+                  'description': updatedDescription,
+                });
+                Navigator.of(context).pop(); // Close dialog after saving
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Gift updated successfully')),
+                );
+              } catch (e) {
+                print('Error updating gift: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error updating gift')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: gold),
+            child: Text("Save", style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> _deleteGift(BuildContext context) async {
+  try {
+    var giftSnapshot = await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).get();
+    var gift = giftSnapshot.data() as Map<String, dynamic>;
+
+    if (gift['status'] != 'available') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gift cannot be deleted unless it is available')),
+      );
+      return;
+    }
+
+    await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).delete();
+    Navigator.of(context).pop(); // Navigate back after deletion
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift deleted successfully')));
+  } catch (e) {
+    print('Error deleting gift: $e');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error deleting gift')));
+  }
+}
+
   Future<void> _pledgeBuy(BuildContext context,Map<String, dynamic> gift) async {
     final pro = Provider.of<UserProvider>(context,listen: false).user!.id;
     try {
@@ -84,175 +203,6 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating gift')));
     }
   }
-
-Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift) async {
-  String updatedName = gift['name'];
-  String updatedPrice = gift['price'];
-  String updatedDescription = gift['description'];
-  String updatedCategory = gift['category'] ?? 'other'; // Default to 'other'
-  String? updatedImage = gift['pic'];
-  bool isChanged = false;
-
-  Future<void> _pickProfileImage() async {
-    String? base64Image = await imageConverter.pickAndCompressImageToString();
-    if (base64Image != null) {
-      updatedImage = base64Image;
-      isChanged = true;
-    }
-  }
-
-  return showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text("Edit Gift", style: TextStyle(color: gold)),
-        backgroundColor: bg,
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Name field
-                  TextField(
-                    controller: TextEditingController(text: updatedName),
-                    onChanged: (value) => updatedName = value,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: "Gift Name",
-                      labelStyle: TextStyle(color: gold),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  // Price field
-                  TextField(
-                    controller: TextEditingController(text: updatedPrice),
-                    onChanged: (value) => updatedPrice = value,
-                    keyboardType: TextInputType.number,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: "Price",
-                      labelStyle: TextStyle(color: gold),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  // Description field
-                  TextField(
-                    controller: TextEditingController(text: updatedDescription),
-                    onChanged: (value) => updatedDescription = value,
-                    maxLines: 3,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: "Description",
-                      labelStyle: TextStyle(color: gold),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  // Category dropdown
-                  DropdownButtonFormField<String>(
-                    value: updatedCategory,
-                    onChanged: (value) => setState(() {
-                      updatedCategory = value!;
-                    }),
-                    dropdownColor: bg,
-                    style: TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      labelText: "Category",
-                      labelStyle: TextStyle(color: gold),
-                      enabledBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                      focusedBorder: UnderlineInputBorder(
-                        borderSide: BorderSide(color: gold),
-                      ),
-                    ),
-                    items: [
-                      "home appliances",
-                      "electronics",
-                      "fashion",
-                      "food",
-                      "books",
-                      "other"
-                    ].map((String category) {
-                      return DropdownMenuItem<String>(
-                        value: category,
-                        child: Text(category, style: TextStyle(color: Colors.white)),
-                      );
-                    }).toList(),
-                  ),
-                  SizedBox(height: 16),
-                  // Image picker
-                  ElevatedButton(
-                    onPressed: () async {
-                      await _pickProfileImage();
-                      setState(() {}); // Refresh dialog to show updated image
-                    },
-                    style: ElevatedButton.styleFrom(backgroundColor: laser),
-                    child: Text("Edit Image", style: TextStyle(color: Colors.white)),
-                  ),
-                  if (updatedImage != null)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Image.memory(
-                        imageConverter.stringToImage(updatedImage!)!,
-                        height: 100,
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(), // Close dialog without saving
-            child: Text("Cancel", style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // Save the updated data to Firestore
-              try {
-                await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).update({
-                  'name': updatedName,
-                  'price': updatedPrice,
-                  'description': updatedDescription,
-                  'category': updatedCategory,
-                  if (isChanged) 'pic': updatedImage, // Only update the image if changed
-                });
-                Navigator.of(context).pop(); // Close dialog after saving
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gift updated successfully')));
-              } catch (e) {
-                print('Error updating gift: $e');
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error updating gift')));
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: gold),
-            child: Text("Save", style: TextStyle(color: Colors.black)),
-          ),
-        ],
-      );
-    },
-  );
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -352,7 +302,10 @@ Future<void> _showEditGiftDialog(BuildContext context, Map<String, dynamic> gift
                         onPressed: () async{
                           var giftData = await FirebaseFirestore.instance.collection('gifts').doc(widget.giftId).get();
                           if (giftData.exists) {
-                            _showEditGiftDialog(context, giftData.data()! as Map<String, dynamic>);
+                            await _showEditGiftDialog(context, giftData.data()! as Map<String, dynamic>);
+                                  setState(() {
+        _fetchGiftDetails();
+      });
                         }},
                         style: ElevatedButton.styleFrom(backgroundColor: gold),
                         child: Text("Edit", style: TextStyle(color: Colors.black)),

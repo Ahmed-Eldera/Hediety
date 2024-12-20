@@ -20,12 +20,17 @@ class _EventCreationPageState extends State<EventCreationPage> {
   final TextEditingController timeController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
+  String? selectedCategory; // Variable to store selected category
+
   // Save as Draft feature
   void _saveAsDraft() async {
+    final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
+
     if (nameController.text.isEmpty ||
         locationController.text.isEmpty ||
         dateController.text.isEmpty ||
-        timeController.text.isEmpty) {
+        timeController.text.isEmpty ||
+        selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill out all fields")),
       );
@@ -35,11 +40,12 @@ class _EventCreationPageState extends State<EventCreationPage> {
     final draftEvent = {
       'id': Uuid().v4(),
       'name': nameController.text.trim(),
-      'description': descriptionController.text.trim(),
+      'author': userId, // Add the author's ID
       'location': locationController.text.trim(),
       'date': dateController.text.trim(),
       'time': timeController.text.trim(),
-      'category': "",
+      'description': descriptionController.text.trim(),
+      'category': selectedCategory, // Include category
     };
 
     await DatabaseHelper.instance.insertEvent(draftEvent);
@@ -60,7 +66,8 @@ class _EventCreationPageState extends State<EventCreationPage> {
     if (nameController.text.isEmpty ||
         locationController.text.isEmpty ||
         dateController.text.isEmpty ||
-        timeController.text.isEmpty) {
+        timeController.text.isEmpty ||
+        selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please fill out all fields")),
       );
@@ -70,14 +77,14 @@ class _EventCreationPageState extends State<EventCreationPage> {
     final event = {
       'id': eventId,
       'name': nameController.text.trim(),
-      'author': userId,
+      'author': userId, // Add the author's ID
       'location': locationController.text.trim(),
       'date': dateController.text.trim(),
       'time': timeController.text.trim(),
       'description': descriptionController.text.trim(),
+      'category': selectedCategory, // Include category
       'gifts': [],
       'coming': [],
-      'category': "",
     };
 
     try {
@@ -144,7 +151,7 @@ class _EventCreationPageState extends State<EventCreationPage> {
           style: TextStyle(color: gold),
         ),
       ),
-      body: SingleChildScrollView(  // Make the body scrollable
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -186,6 +193,33 @@ class _EventCreationPageState extends State<EventCreationPage> {
                     controller: timeController,
                     labelText: "Time",
                     hintText: "Pick a time",
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: selectedCategory,
+                items: ['Work', 'Personal', 'Family'].map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedCategory = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: "Category",
+                  filled: true,
+                  fillColor: lighter,
+                  labelStyle: TextStyle(color: Colors.white),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: gold),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: a7mar),
                   ),
                 ),
               ),

@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider<UserProvider>(
       create: (_) => UserProvider(loginRepository as AuthRepository),
       child: MaterialApp(
-        title: 'Flutter App with Clean Architecture',
+        title: 'Hediety',
          theme: ThemeData(
         // primarySwatch: laser,
         fontFamily: "pixel",

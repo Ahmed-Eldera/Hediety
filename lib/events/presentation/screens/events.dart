@@ -7,6 +7,7 @@ class UserEventsPage extends StatefulWidget {
   final String userId; // User ID to fetch the events
   final bool isMyEvents; // Flag to check if it's the current user's events
   ImageProvider<Object>? pic;
+
   UserEventsPage({required this.userId, required this.isMyEvents, this.pic});
 
   @override
@@ -19,9 +20,9 @@ class _UserEventsPageState extends State<UserEventsPage> {
   bool isLoading = true;
   String userName = '';
   String eventNameFilter = '';
-  String statusFilter = 'All';
-  String categoryFilter = 'All';
-  String dateSort = 'Ascending'; // Default sort by ascending date
+  String selectedCategory = 'All'; // Default category
+  String sortBy = 'Date'; // Default sorting option
+  String sortOrder = 'Ascending'; // Default sorting order
 
   @override
   void initState() {
@@ -72,7 +73,6 @@ class _UserEventsPageState extends State<UserEventsPage> {
     }
   }
 
-  // Show edit dialog
   void _showEditDialog(Map<String, dynamic> event) {
     final nameController = TextEditingController(text: event['name']);
     final dateController = TextEditingController(text: event['date']);
@@ -143,65 +143,91 @@ class _UserEventsPageState extends State<UserEventsPage> {
     );
   }
 
-  // Delete event
-  void _deleteEvent(String eventId) async {
-    try {
-      await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
-      _fetchEvents(); // Refresh the events
-    } catch (e) {
-      print('Error deleting event: $e');
+void _deleteEvent(String eventId) async {
+  try {
+    // Fetch the event document
+    var eventDoc = await FirebaseFirestore.instance
+        .collection('events')
+        .doc(eventId)
+        .get();
+
+    if (!eventDoc.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event does not exist.')),
+      );
+      return;
     }
+
+    // Get the list of gift IDs
+    List<dynamic> giftIds = eventDoc['gifts'] ?? [];
+
+    if (giftIds.isNotEmpty) {
+      // Check the status of each gift
+      bool allGiftsAvailable = true;
+
+      for (var giftId in giftIds) {
+        var giftDoc = await FirebaseFirestore.instance
+            .collection('gifts')
+            .doc(giftId)
+            .get();
+
+        if (giftDoc.exists && giftDoc['status'] != 'available') {
+          allGiftsAvailable = false;
+          break;
+        }
+      }
+
+      if (!allGiftsAvailable) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                'Event cannot be deleted because it has pledged gifts.'),
+          ),
+        );
+        return;
+      }
+    }
+
+    // Proceed to delete the event
+    await FirebaseFirestore.instance.collection('events').doc(eventId).delete();
+    _fetchEvents(); // Refresh the events
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Event deleted successfully.')),
+    );
+  } catch (e) {
+    print('Error deleting event: $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Failed to delete the event.')),
+    );
   }
+}
 
   // Apply the filters and sorting
   void _applyFiltersAndSort() {
     List<Map<String, dynamic>> filtered = List.from(events);
 
-    // Filter by name
-    if (eventNameFilter.isNotEmpty) {
-      filtered = filtered
-          .where((event) => event['name']
-              .toString()
-              .toLowerCase()
-              .contains(eventNameFilter.toLowerCase()))
-          .toList();
-    }
-
-    // Filter by status (Upcoming/Current/Past)
-    if (statusFilter != 'All') {
-      DateTime now = DateTime.now();
-      filtered = filtered.where((event) {
-        DateTime eventDate = DateTime.parse(event['date']);
-        if (statusFilter == 'Upcoming') {
-          return eventDate.isAfter(now);
-        } else if (statusFilter == 'Current') {
-          return eventDate.isBefore(now) &&
-              eventDate.isAfter(now.subtract(Duration(days: 1)));
-        } else {
-          // Past
-          return eventDate.isBefore(now);
-        }
-      }).toList();
-    }
-
     // Filter by category
-    if (categoryFilter != 'All') {
+    if (selectedCategory != 'All') {
       filtered = filtered
-          .where((event) => event['category'] == categoryFilter)
+          .where((event) => event['category'] == selectedCategory)
           .toList();
     }
 
-    // Sort by date
-    if (dateSort == 'Ascending') {
-      filtered.sort((a, b) => DateTime.parse(a['date'])
-          .compareTo(DateTime.parse(b['date'])));
-    } else {
-      filtered.sort((a, b) => DateTime.parse(b['date'])
-          .compareTo(DateTime.parse(a['date'])));
-    }
+    // Sorting logic
+    filtered.sort((a, b) {
+      int comparison = 0;
+      if (sortBy == 'Date') {
+        comparison = DateTime.parse(a['date'])
+            .compareTo(DateTime.parse(b['date']));
+      } else if (sortBy == 'Name') {
+        comparison = a['name'].toString().compareTo(b['name'].toString());
+      }
+      return sortOrder == 'Ascending' ? comparison : -comparison;
+    });
 
     setState(() {
       filteredEvents = filtered;
+      _applyFiltersAndSort();
     });
   }
 
@@ -221,7 +247,71 @@ class _UserEventsPageState extends State<UserEventsPage> {
           ? Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // Filter and sorting UI...
+                // Category ChipChoice
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildCategoryChip('All'),
+                        _buildCategoryChip('Work'),
+                        _buildCategoryChip('Personal'),
+                        _buildCategoryChip('Family'),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Sorting UI
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      DropdownButton<String>(
+                        value: sortBy,
+                        dropdownColor: lighter,
+                        style: TextStyle(color: Colors.white),
+                        items: ['Date', 'Name']
+                            .map((option) => DropdownMenuItem(
+                                  value: option,
+                                  child: Text(option),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              sortBy = value;
+                            });
+                            _applyFiltersAndSort();
+                          }
+                        },
+                      ),
+                      DropdownButton<String>(
+                        value: sortOrder,
+                        dropdownColor: lighter,
+                        style: TextStyle(color: Colors.white),
+                        items: ['Ascending', 'Descending']
+                            .map((option) => DropdownMenuItem(
+                                  value: option,
+                                  child: Text(option),
+                                ))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              sortOrder = value;
+                            });
+                            _applyFiltersAndSort();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Events List
                 Expanded(
                   child: filteredEvents.isEmpty
                       ? Center(child: Text('No events found.'))
@@ -276,6 +366,31 @@ class _UserEventsPageState extends State<UserEventsPage> {
                 ),
               ],
             ),
+    );
+  }
+
+  // Helper method to build category chips
+  Widget _buildCategoryChip(String category) {
+    bool isSelected = selectedCategory == category;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: ChoiceChip(
+        label: Text(
+          category,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black,
+          ),
+        ),
+        selected: isSelected,
+        selectedColor: gold,
+        backgroundColor: lighter,
+        onSelected: (selected) {
+          setState(() {
+            selectedCategory = category;
+          });
+          _applyFiltersAndSort();
+        },
+      ),
     );
   }
 }

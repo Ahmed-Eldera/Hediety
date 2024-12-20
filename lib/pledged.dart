@@ -5,16 +5,16 @@ import 'package:provider/provider.dart';
 import 'package:hediety/colors.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:hediety/image_handler.dart';
-// import 'package:hediety/gift/presentation/giftDetailsPage.dart';
+
 class PledgedGiftsPage extends StatefulWidget {
   @override
   _PledgedGiftsPageState createState() => _PledgedGiftsPageState();
 }
-
 class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
   final ImageConverterr imageConverter = ImageConverterr();
-  String selectedSortOption = 'Date (Newest First)';
+  String selectedSortOption = 'Date Asc';
   String selectedStatusFilter = 'All';
+  List<DocumentSnapshot> allDocs = []; // Holds all gift documents
 
   @override
   Widget build(BuildContext context) {
@@ -51,39 +51,20 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
             return Center(child: Text('No gifts available.', style: TextStyle(color: Colors.white)));
           }
 
+          // Split into chunks if there are more than 10 pledged gifts
+          List<List<String>> chunks = splitIntoChunks(pledgedGiftIds, 10);
+
           return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Sort and Filter Section
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Sort Dropdown
-                    DropdownButton<String>(
-                      value: selectedSortOption,
-                      icon: Icon(Icons.sort, color: Colors.white),
-                      dropdownColor: bg,
-                      style: TextStyle(color: Colors.white),
-                      items: <String>[
-                        'Date (Newest First)',
-                        'Date (Oldest First)',
-                      ].map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          selectedSortOption = newValue!;
-                        });
-                      },
-                    ),
-                    SizedBox(width: 16),
-
-                    // Status Filter Chips
                     Wrap(
+                      alignment: WrapAlignment.spaceAround,
                       spacing: 8,
                       children: ['All', 'Pledged', 'Bought'].map((status) {
                         return ChoiceChip(
@@ -94,52 +75,70 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
                               selectedStatusFilter = selected ? status : 'All';
                             });
                           },
-                          selectedColor: gold,
+                          selectedColor: status == 'Pledged' ? a7mar : status == "All" ? Colors.blue : gold,
                           backgroundColor: lighter,
                           labelStyle: TextStyle(color: Colors.white),
                         );
                       }).toList(),
                     ),
+                    DropdownButton<String>(
+                      value: selectedSortOption,
+                      icon: Icon(Icons.sort, color: Colors.white),
+                      dropdownColor: bg,
+                      style: TextStyle(color: Colors.white),
+                      items: <String>[
+                        'Date Asc',
+                        'Date Desc',
+                      ].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (newValue) {
+                        setState(() {
+                          selectedSortOption = newValue!;
+                          // Call the sort function when dropdown value changes
+                          sortGifts();
+                        });
+                      },
+                    ),
                   ],
                 ),
               ),
-              
+
               // Pledged Gifts List
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
+                child: FutureBuilder<List<QuerySnapshot>>(
+                  future: Future.wait(chunks.map((chunk) =>
+                    FirebaseFirestore.instance
                       .collection('gifts')
-                      .where(FieldPath.documentId, whereIn: pledgedGiftIds)
-                      .snapshots(),
-                  builder: (context, giftSnapshot) {
-                    if (giftSnapshot.connectionState == ConnectionState.waiting) {
+                      .where(FieldPath.documentId, whereIn: chunk)
+                      .get()
+                  ).toList()),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return Center(child: CircularProgressIndicator());
                     }
-                    if (giftSnapshot.hasError) {
-                      return Center(child: Text('Error: ${giftSnapshot.error}', style: TextStyle(color: Colors.white)));
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}', style: TextStyle(color: Colors.white)));
                     }
 
-                    var filteredGifts = giftSnapshot.data!.docs
-                        .where((doc) {
-                          var giftData = doc.data() as Map<String, dynamic>;
-                          var status = giftData['status'] ?? '';
-                          return selectedStatusFilter == 'All' || status.toLowerCase() == selectedStatusFilter.toLowerCase();
-                        })
-                        .toList();
+                    allDocs = [];
+                    for (var chunkSnapshot in snapshot.data!) {
+                      allDocs.addAll(chunkSnapshot.docs);
+                    }
+
+                    // Filter gifts based on selected status
+                    var filteredGifts = allDocs.where((doc) {
+                      var giftData = doc.data() as Map<String, dynamic>;
+                      var status = giftData['status'] ?? '';
+                      return selectedStatusFilter == 'All' || status.toLowerCase() == selectedStatusFilter.toLowerCase();
+                    }).toList();
 
                     if (filteredGifts.isEmpty) {
                       return Center(child: Text('No gifts available.', style: TextStyle(color: Colors.white)));
                     }
-
-                    // Sort gifts based on selected sort option
-                    filteredGifts.sort((a, b) {
-                      var aDate = a['date'] ?? '';
-                      var bDate = b['date'] ?? '';
-                      if (selectedSortOption == 'Date (Newest First)') {
-                        return bDate.compareTo(aDate);
-                      }
-                      return aDate.compareTo(bDate);
-                    });
 
                     return ListView.builder(
                       itemCount: filteredGifts.length,
@@ -149,7 +148,7 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
                         String eventId = giftData['eventId'] ?? '';
                         String userId = giftData['userId'] ?? '';
 
-                        return FutureBuilder<List<Map<String, String>>>(
+                        return FutureBuilder<List<Map<String, String>>>( 
                           future: Future.wait([
                             FirebaseFirestore.instance
                                 .collection('events')
@@ -173,24 +172,22 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
                             var eventData = snapshot.data?[0] ?? {'eventName': 'Unknown Event', 'eventDate': 'No Date'};
                             var userData = snapshot.data?[1] ?? {'username': 'Unknown User'};
 
-                            // Get the status of the gift and assign the color
                             String status = giftData['status'] ?? 'Unknown';
                             Color statusColor;
                             switch (status.toLowerCase()) {
                               case 'pledged':
-                                statusColor = a7mar; // Red for pledged
+                                statusColor = a7mar;
                                 break;
                               case 'bought':
-                                statusColor = gold; // Gold for bought
+                                statusColor = gold;
                                 break;
                               default:
-                                statusColor = Colors.white70; // Default color
+                                statusColor = Colors.white70;
                                 break;
                             }
 
                             return GestureDetector(
                               onTap: () {
-                                // Navigate to GiftDetailsPage with the giftId
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -209,7 +206,6 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // Gift Image
                                       if (giftData['pic'] != null)
                                         Container(
                                           height: 150,
@@ -228,30 +224,14 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
                                           child: Icon(Icons.image, color: Colors.white, size: 50),
                                         ),
                                       SizedBox(height: 16),
-                                      // Gift Name and Status
-                                      Text(
-                                        giftData['name'] ?? 'Gift ${index + 1}',
-                                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-                                      ),
+                                      Text(giftData['name'] ?? 'Gift ${index + 1}',
+                                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                                       SizedBox(height: 8),
-                                      Text(
-                                        'Status: $status',
-                                        style: TextStyle(color: statusColor, fontSize: 14),
-                                      ),
+                                      Text('Status: $status', style: TextStyle(color: statusColor, fontSize: 14)),
                                       SizedBox(height: 8),
-                                      // Event and Recipient Info
-                                      Text(
-                                        'Event: ${eventData['eventName']}',
-                                        style: TextStyle(color: Colors.white, fontSize: 14),
-                                      ),
-                                      Text(
-                                        'Event Date: ${eventData['eventDate']}',
-                                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                                      ),
-                                      Text(
-                                        'Recipient: ${userData['username']}',
-                                        style: TextStyle(color: Colors.white, fontSize: 14),
-                                      ),
+                                      Text('Event: ${eventData['eventName']}', style: TextStyle(color: Colors.white, fontSize: 14)),
+                                      Text('Event Date: ${eventData['eventDate']}', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                      Text('Recipient: ${userData['username']}', style: TextStyle(color: Colors.white, fontSize: 14)),
                                     ],
                                   ),
                                 ),
@@ -269,5 +249,53 @@ class _PledgedGiftsPageState extends State<PledgedGiftsPage> {
         },
       ),
     );
+  }
+
+  // Split the list of pledged gifts into chunks of 10
+  List<List<String>> splitIntoChunks(List<String> list, int chunkSize) {
+    List<List<String>> chunks = [];
+    for (int i = 0; i < list.length; i += chunkSize) {
+      chunks.add(list.sublist(i, i + chunkSize > list.length ? list.length : i + chunkSize));
+    }
+    return chunks;
+  }
+
+  // Isolated sorting function
+  void sortGifts() {
+    if (selectedSortOption == 'Date Asc') {
+      allDocs.sort((a, b) {
+        var aEventId = a['eventId'] ?? '';
+        var bEventId = b['eventId'] ?? '';
+        var aEventDate = '';
+        var bEventDate = '';
+
+        FirebaseFirestore.instance.collection('events').doc(aEventId).get().then((eventDoc) {
+          aEventDate = eventDoc['date'] ?? '';
+        });
+
+        FirebaseFirestore.instance.collection('events').doc(bEventId).get().then((eventDoc) {
+          bEventDate = eventDoc['date'] ?? '';
+        });
+
+        return aEventDate.compareTo(bEventDate); // Ascending order
+      });
+    } else {
+      allDocs.sort((a, b) {
+        var aEventId = a['eventId'] ?? '';
+        var bEventId = b['eventId'] ?? '';
+        var aEventDate = '';
+        var bEventDate = '';
+
+        FirebaseFirestore.instance.collection('events').doc(aEventId).get().then((eventDoc) {
+          aEventDate = eventDoc['date'] ?? '';
+        });
+
+        FirebaseFirestore.instance.collection('events').doc(bEventId).get().then((eventDoc) {
+          bEventDate = eventDoc['date'] ?? '';
+        });
+
+        return bEventDate.compareTo(aEventDate); // Descending order
+      });
+    }
   }
 }

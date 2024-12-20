@@ -47,10 +47,17 @@ dependencies:
   path_provider: ^2.1.5
   image_picker: ^1.1.2
   image: ^4.5.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_driver: # If you're using Flutter driver-based testing
+    sdk: flutter
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

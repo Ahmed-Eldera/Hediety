@@ -12,7 +12,6 @@ import 'package:hediety/widgets/MyButton.dart';
 import 'package:hediety/UserProvider.dart';
 import 'package:provider/provider.dart';
 
-// The HomePage now fetches data from Firestore dynamically
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -20,8 +19,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> friends = [];
+  List<Map<String, dynamic>> filteredFriends = [];
   bool isLoading = true;
-
+  String searchQuery = '';
 
   @override
   void initState() {
@@ -34,15 +34,12 @@ class _HomePageState extends State<HomePage> {
     final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
 
     try {
-      // Fetch the current user's document to get the friend IDs
       var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
       if (userDoc.exists) {
         List<dynamic> friendIds = userDoc['friends'] ?? [];
 
         if (friendIds.isNotEmpty) {
-          // Fetch each friend's details and events
           List<Map<String, dynamic>> fetchedFriends = [];
-          // List<Map<Uint8List, dynamic>> fetchedFriendspics = [];
           for (var friendId in friendIds) {
             var friendDoc = await FirebaseFirestore.instance.collection('users').doc(friendId).get();
             if (friendDoc.exists) {
@@ -53,15 +50,15 @@ class _HomePageState extends State<HomePage> {
                 'id': friendId,
                 'username': friendData['username'],
                 'phone': friendData['phone'],
-                'pic': friendData['pic']  ?? 'https://via.placeholder.com/150',
+                'pic': friendData['pic'] ?? 'https://via.placeholder.com/150',
                 'events': events,
               });
-
             }
           }
 
           setState(() {
             friends = fetchedFriends;
+            filteredFriends = fetchedFriends;
             isLoading = false;
           });
         } else {
@@ -81,80 +78,113 @@ class _HomePageState extends State<HomePage> {
   // Function to fetch events of a friend
   Future<List<Map<String, dynamic>>> _getFriendEvents(String friendId) async {
     try {
-      var eventsSnapshot = await FirebaseFirestore.instance.collection('events').where('author', isEqualTo: friendId).get();
+      var eventsSnapshot = await FirebaseFirestore.instance
+          .collection('events')
+          .where('author', isEqualTo: friendId)
+          .get();
       return eventsSnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
     } catch (e) {
       print('Error fetching events for friend: $e');
       return [];
     }
   }
-@override
-Widget build(BuildContext context) {
-  final pro = Provider.of<UserProvider>(context);
 
-  return Scaffold(
-    backgroundColor: bg,
-    appBar: HeaderWithIcons(name: pro.user!.name),
-    body: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 20),
-          Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: MyButton(
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
-                    },
-                    label: 'Create Event',
-                    backgroundColor: a7mar,
-                  ),
+  // Filter friends based on the search query
+  void _filterFriends(String query) {
+    setState(() {
+      searchQuery = query;
+      if (query.isEmpty) {
+        filteredFriends = friends;
+      } else {
+        filteredFriends = friends
+            .where((friend) => friend['username'].toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pro = Provider.of<UserProvider>(context);
+
+    return Scaffold(
+      backgroundColor: bg,
+      appBar: HeaderWithIcons(name: pro.user!.name),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+             TextField(
+              onChanged: _filterFriends,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: lighter,
+                hintText: 'Search friends...',
+                hintStyle: TextStyle(color: Colors.white54),
+                prefixIcon: Icon(Icons.search, color: Colors.white),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
                 ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: MyButton(
-                    label: 'Event Drafts',
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => ShowSavedEventsPage()));
-                    },
-                    backgroundColor: gold,
-                    textColor: Colors.black,
+              ),
+            ),SizedBox(height: 20),
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: MyButton(
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => EventCreationPage()));
+                      },
+                      label: 'Create Event',
+                      backgroundColor: a7mar,
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: MyButton(
+                      label: 'Event Drafts',
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => ShowSavedEventsPage()));
+                      },
+                      backgroundColor: gold,
+                      textColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(height: 20),
-          Expanded(
-            child: isLoading
-                ? Center(child: CircularProgressIndicator())
-                : friends.isEmpty
-                    ? Center(child: Text('You have no friends or they have no events'))
-                    : RefreshIndicator(
-                        onRefresh: _loadFriends, // Function to call when refreshed
-                        child: ListView.builder(
-                          itemCount: friends.length,
-                          itemBuilder: (context, index) {
-                            var friend = friends[index];
-                            return FriendListItem(friend: friend);
-                          },
+            SizedBox(height: 20),
+
+            Expanded(
+              child: isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : filteredFriends.isEmpty
+                      ? Center(child: Text('No friends match your search.', style: TextStyle(color: Colors.white)))
+                      : RefreshIndicator(
+                          onRefresh: _loadFriends,
+                          child: ListView.builder(
+                            itemCount: filteredFriends.length,
+                            itemBuilder: (context, index) {
+                              var friend = filteredFriends[index];
+                              return FriendListItem(friend: friend);
+                            },
+                          ),
                         ),
-                      ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
-    ),
-    floatingActionButton: AddFriendButton(
-      onPressed: () {
-        print('Add friends button pressed');
-      },
-    ),
-  );
-}
+      floatingActionButton: AddFriendButton(
+        onPressed: () {
+          print('Add friends button pressed');
+        },
+      ),
+    );
+  }
 }
 
 class FriendListItem extends StatelessWidget {
@@ -164,23 +194,21 @@ class FriendListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    ImageProvider<Object> img =friend['pic'].contains("https") ? NetworkImage(friend['pic']):MemoryImage(imageConverter.stringToImage(friend['pic'])!);
+    ImageProvider<Object> img = friend['pic'].contains("https")
+        ? NetworkImage(friend['pic'])
+        : MemoryImage(imageConverter.stringToImage(friend['pic'])!);
     return Card(
       color: lighter,
       margin: EdgeInsets.all(8),
       child: ListTile(
         leading: CircleAvatar(
-
-          backgroundImage: img ,
+          backgroundImage: img,
           radius: 25,
         ),
-
         title: Text(friend['username'], style: TextStyle(fontSize: 18, color: Colors.white)),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Text('Phone: ${friend['phone']}', style: TextStyle(color: Colors.white)),
-            // SizedBox(height: 5),
             Text(
               'Upcoming Events: ${friend['events'].isNotEmpty ? friend['events'].length : 'None'}',
               style: TextStyle(color: Colors.white),
@@ -188,16 +216,16 @@ class FriendListItem extends StatelessWidget {
           ],
         ),
         onTap: () {
-Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => UserEventsPage(
-      userId: friend['id'], // The ID of the user whose events to show
-      isMyEvents: false,
-      pic:img // Set this to true if it's your own events, false for others
-    ),
-  ),
-);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => UserEventsPage(
+                userId: friend['id'],
+                isMyEvents: false,
+                pic: img,
+              ),
+            ),
+          );
         },
       ),
     );

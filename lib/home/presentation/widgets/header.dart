@@ -26,12 +26,7 @@ class HeaderWithIcons extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(Icons.search, color: Colors.white),
-          onPressed: () {
-            print('Search button pressed');
-          },
-        ),
+        
         IconButton(
           icon: Icon(Icons.settings, color: Colors.white),
           onPressed: () {
