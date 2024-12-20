@@ -103,7 +103,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     ),
                   ),
                 const SizedBox(height: 24),
-                // Gifts Wrap (StreamBuilder with Scrollable Widget)
+                // Gifts Section
                 StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('events')
@@ -124,18 +124,19 @@ class _EventDetailPageState extends State<EventDetailPage> {
                     }
 
                     var eventData = snapshot.data!.data() as Map<String, dynamic>;
-                    List<String> updatedGiftIds = List<String>.from(eventData['gifts'] ?? []);
+                    List<String> giftIds = List<String>.from(eventData['gifts'] ?? []);
 
-                    if (updatedGiftIds.isEmpty) {
+                    if (giftIds.isEmpty) {
                       return const Center(
-                        child: Text('No gifts available.', style: TextStyle(color: Colors.white)),
+                        child: Text('Waiting for gifts...', style: TextStyle(color: Colors.white)),
                       );
                     }
 
+                    // Fetch gifts when available
                     return StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('gifts')
-                          .where(FieldPath.documentId, whereIn: updatedGiftIds)
+                          .where(FieldPath.documentId, whereIn: giftIds)
                           .snapshots(),
                       builder: (context, giftSnapshot) {
                         if (giftSnapshot.connectionState == ConnectionState.waiting) {
@@ -144,7 +145,7 @@ class _EventDetailPageState extends State<EventDetailPage> {
 
                         if (!giftSnapshot.hasData || giftSnapshot.data!.docs.isEmpty) {
                           return const Center(
-                            child: Text('No gifts available.', style: TextStyle(color: Colors.white)),
+                            child: Text('Waiting for gift data...', style: TextStyle(color: Colors.white)),
                           );
                         }
 
