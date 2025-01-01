@@ -1,0 +1,21 @@
+INITIAL DRAFT
+
+Week 1:
+
+users
+events
+static dashboard
+
+Week 2:
+
+dashboard -> functionalities
+users  -> events
+Decorator -> receipt , certificate
+
+
+
+der3 -> provider
+->dashboard admin (assign tasks , create , edit events - track volunteers - manage donations distribution)
+->dashboard donor (view events , register ticket , donate , view logs ,generate reciepts -communication module to receive the reciept-)
+->dashboard volunteer (view events , view tasks , log start hours , generate certificate , view history , )
+-> profile page edit user data

@@ -22,6 +22,11 @@ class _EventCreationPageState extends State<EventCreationPage> {
 
   String? selectedCategory; // Variable to store selected category
 
+
+
+
+
+
   // Save as Draft feature
   void _saveAsDraft() async {
     final userId = Provider.of<UserProvider>(context, listen: false).user!.id;
@@ -40,12 +45,12 @@ class _EventCreationPageState extends State<EventCreationPage> {
     final draftEvent = {
       'id': Uuid().v4(),
       'name': nameController.text.trim(),
-      'author': userId, // Add the author's ID
+      'author': userId, 
       'location': locationController.text.trim(),
       'date': dateController.text.trim(),
       'time': timeController.text.trim(),
       'description': descriptionController.text.trim(),
-      'category': selectedCategory, // Include category
+      'category': selectedCategory, 
     };
 
     await DatabaseHelper.instance.insertEvent(draftEvent);
@@ -56,6 +61,9 @@ class _EventCreationPageState extends State<EventCreationPage> {
 
     Navigator.of(context).pop();
   }
+
+
+
 
   // Function to create the event in Firestore
   Future<void> _createEvent() async {

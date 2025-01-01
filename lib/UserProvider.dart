@@ -9,7 +9,6 @@ class UserProvider with ChangeNotifier {
   final TextEditingController nameController = TextEditingController();
 
    AuthRepository authRepository;
-
   MyUser? _user;
   MyUser? get user => _user;
 
@@ -17,7 +16,11 @@ class UserProvider with ChangeNotifier {
   void changeProvider({required AuthRepository newRepo}){
     this.authRepository=newRepo;
   }
+//user->arr(comm_methods)
 
+// - mail
+// - sms
+// - 3rd option
   Future<void> login({required String email,required String password}) async {
     try {
       final user = await authRepository.auth(email: email, password: password);
@@ -95,3 +98,4 @@ Future<void> updateUser({
     notifyListeners();
   }
 }
+//
